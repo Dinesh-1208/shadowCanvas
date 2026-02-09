@@ -24,7 +24,7 @@ export function CanvasHeader({ title, setTitle, onMenuClick }) {
             <Button
                 variant="ghost"
                 size="iconSm"
-                className="text-muted-foreground hover:text-foreground"
+                className="hover:bg-gray-100 text-gray-600 hover:text-gray-900"
                 onClick={onMenuClick}
             >
                 <MoreHorizontal className="h-5 w-5" />
@@ -39,12 +39,12 @@ export function CanvasHeader({ title, setTitle, onMenuClick }) {
                         onChange={(e) => setTempTitle(e.target.value)}
                         onBlur={handleBlur}
                         onKeyDown={handleKeyDown}
-                        className="bg-transparent text-sm font-semibold text-foreground outline-none border-b border-primary w-[200px]"
+                        className="bg-transparent text-sm font-semibold text-gray-900 outline-none border-b border-gray-300 focus:border-blue-500 w-[200px]"
                     />
                 ) : (
                     <div
                         onClick={() => setIsEditing(true)}
-                        className="text-sm font-semibold text-foreground cursor-text px-1 py-0.5 rounded hover:bg-muted/50 transition-colors"
+                        className="text-sm font-semibold text-gray-900 cursor-text px-1 py-0.5 rounded hover:bg-gray-100 transition-colors"
                     >
                         {title}
                     </div>

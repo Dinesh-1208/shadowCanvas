@@ -47,7 +47,7 @@ export default function CanvasPage() {
     }, [canvas]);
 
     return (
-        <div className="relative w-screen h-screen overflow-hidden bg-background">
+        <div className="relative w-screen h-screen overflow-hidden bg-white">
 
             {/* 1. Full Screen Canvas Layer */}
             <div id="canvas-root" className="absolute inset-0 z-0">

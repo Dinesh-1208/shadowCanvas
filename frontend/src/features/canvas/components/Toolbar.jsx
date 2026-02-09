@@ -39,7 +39,7 @@ export default function Toolbar({ tool, setTool, undo, redo, zoom, setZoom, clea
         <motion.div
             initial={{ y: -50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="glass-panel flex items-center p-1.5 rounded-full gap-1 shadow-2xl"
+            className="bg-white border border-gray-200 flex items-center p-1.5 rounded-full gap-1 shadow-lg cursor-default"
         >
 
             {/* Undo/Redo Group */}

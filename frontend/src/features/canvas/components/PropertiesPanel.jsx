@@ -30,7 +30,7 @@ export default function PropertiesPanel({ canvas }) {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    className="glass-panel p-4 rounded-xl flex flex-col gap-4"
+                    className="bg-white border border-gray-200 p-4 rounded-xl flex flex-col gap-4 shadow-xl cursor-default"
                 >
                     <div className="flex items-center gap-2 pb-2 border-b border-border/50">
                         <Layers className="h-4 w-4 text-primary" />
@@ -63,7 +63,7 @@ export default function PropertiesPanel({ canvas }) {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
-                    className="glass-panel p-4 rounded-xl flex flex-col gap-5"
+                    className="bg-white border border-gray-200 p-4 rounded-xl flex flex-col gap-5 shadow-xl cursor-default"
                 >
                     {/* Header */}
                     <div className="flex items-center justify-between">

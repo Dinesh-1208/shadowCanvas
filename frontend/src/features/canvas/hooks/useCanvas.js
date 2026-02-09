@@ -324,7 +324,7 @@ export function useCanvas() {
     function setCanvasTitle(newTitle) {
         setTitle(newTitle);
         if (backendReady.current && canvasIdRef.current) {
-            import('../utils/api').then(({ updateCanvasMetadata }) => {
+            import('../../../utils/api').then(({ updateCanvasMetadata }) => {
                 updateCanvasMetadata(canvasIdRef.current, { title: newTitle })
                     .catch(err => console.error("Failed to save title", err));
             });

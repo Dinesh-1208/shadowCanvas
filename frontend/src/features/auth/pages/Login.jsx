@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import AuthCard from "../components/AuthCard";
-import authService from "../../services/authService";
-import "../../styles/auth.css";
+import authService from "../../../services/authService";
+import "../../../styles/auth.css";
 
 const Login = () => {
     const [formData, setFormData] = useState({
