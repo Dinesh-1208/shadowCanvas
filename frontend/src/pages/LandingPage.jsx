@@ -1,14 +1,15 @@
 import React from "react";
 import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 const LandingPage = () => {
     return (
-        <div className="min-h-screen bg-[#b2a4ff] relative overflow-hidden">
+        <div className="min-h-screen bg-[#b2a4ff] relative overflow-hidden flex flex-col">
             {/* Background blobs for depth */}
             <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#9281ff] rounded-full blur-[120px] opacity-60"></div>
             <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#c7bdff] rounded-full blur-[120px] opacity-60"></div>
 
-            <div className="relative z-10">
+            <div className="relative z-10 flex-grow">
                 <Navbar />
 
                 {/* Placeholder for Hero to show Navbar context */}
@@ -41,6 +42,7 @@ const LandingPage = () => {
                     </div>
                 </section>
             </div>
+            <Footer />
         </div>
     );
 };
