@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthCard from "../components/AuthCard";
-import authService from "../services/authService";
-import "../styles/auth.css";
+import authService from "../../../services/authService";
+import "../../../styles/auth.css";
 
 const Register = () => {
     const [formData, setFormData] = useState({
