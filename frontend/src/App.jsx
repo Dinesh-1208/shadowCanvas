@@ -7,17 +7,19 @@ import ForgotPassword from "./features/auth/pages/ForgotPassword";
 import ResetPassword from "./features/auth/pages/ResetPassword";
 import CanvasPage from "./features/canvas/components/CanvasPage";
 
+import LandingPage from "./pages/LandingPage";
+
 function App() {
   return (
     <Router>
       <Routes>
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/home" element={<Home />} />
         <Route path="/canvas" element={<CanvasPage />} />
-        <Route path="/" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
   );
