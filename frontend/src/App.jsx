@@ -6,6 +6,7 @@ import Home from "./pages/Home";
 import ForgotPassword from "./features/auth/pages/ForgotPassword";
 import ResetPassword from "./features/auth/pages/ResetPassword";
 import CanvasPage from "./features/canvas/components/CanvasPage";
+import PrivateRoute from "./components/PrivateRoute";
 
 import LandingPage from "./pages/LandingPage";
 
@@ -18,8 +19,10 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/canvas" element={<CanvasPage />} />
+        <Route element={<PrivateRoute />}>
+          <Route path="/home" element={<Home />} />
+          <Route path="/canvas" element={<CanvasPage />} />
+        </Route>
       </Routes>
     </Router>
   );

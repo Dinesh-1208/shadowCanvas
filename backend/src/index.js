@@ -32,8 +32,11 @@ mongoose
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
+import canvasRoutes from "./routes/canvas.js";
+
 // Routes
 app.use("/auth", authRoutes);
+app.use("/canvas", canvasRoutes);
 
 app.get("/", (req, res) => {
   res.send("ShadowCanvas Backend is running");

@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import LogoutButton from '../../auth/components/LogoutButton';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
@@ -53,6 +54,12 @@ export default function PropertiesPanel({ canvas }) {
                         <div className="flex justify-between items-center text-sm">
                             <span className="text-muted-foreground">Grid</span>
                             <span className="text-xs font-medium text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 rounded">Active</span>
+                        </div>
+
+                        <Separator />
+
+                        <div className="pt-2">
+                            <LogoutButton className="btn-danger-sm" />
                         </div>
                     </div>
                 </motion.div>

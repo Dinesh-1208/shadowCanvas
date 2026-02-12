@@ -4,7 +4,12 @@ import Canvas from '../models/Canvas.model.js';
 import CanvasState from '../models/CanvasState.model.js';
 import CanvasEvent from '../models/CanvasEvent.model.js';
 
+import { protect } from '../middleware/auth.middleware.js';
+
 const router = express.Router();
+
+// Apply protection to all canvas routes
+router.use(protect);
 
 // ─── POST /canvas/create ─── Create a new canvas (metadata only)
 router.post('/create', async (req, res) => {
