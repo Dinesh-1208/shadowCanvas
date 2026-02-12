@@ -49,11 +49,6 @@ export default function PropertiesPanel({ canvas }) {
                         </div>
 
                         <div className="flex justify-between items-center text-sm">
-                            <span className="text-muted-foreground">Background</span>
-                            <div className="h-4 w-4 rounded-full border border-border bg-white shadow-sm" />
-                        </div>
-
-                        <div className="flex justify-between items-center text-sm">
                             <span className="text-muted-foreground">Grid</span>
                             <span className="text-xs font-medium text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 rounded">Active</span>
                         </div>

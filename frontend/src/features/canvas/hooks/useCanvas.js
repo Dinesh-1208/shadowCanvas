@@ -29,7 +29,17 @@ export function useCanvas() {
     const [arrowEnd, setArrowEnd] = useState('arrow');      // 'arrow' | 'none'
 
     const [zoom, setZoom] = useState(1);
-    const [pan, setPan] = useState({ x: 0, y: 0 });
+    const [canvasSize, setCanvasSize] = useState({ width: 1080, height: 720 });
+    const [pan, setPan] = useState(() => {
+        // Center the default canvas (1080x720) in the viewport
+        if (typeof window !== 'undefined') {
+            return {
+                x: (window.innerWidth - 1080) / 2,
+                y: (window.innerHeight - 720) / 2
+            };
+        }
+        return { x: 40, y: 40 };
+    });
 
     // Undo / Redo stacks
     const undoStack = useRef([]);
@@ -512,6 +522,7 @@ export function useCanvas() {
         clearCanvas,
         changeBackgroundColor,
         erasePath,
+        canvasSize, setCanvasSize,
         canvasId: canvasIdRef.current,
     };
 }

@@ -13,6 +13,8 @@ export default function ColorPicker({ color, onChange, className }) {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef(null);
 
+    const closeTimerRef = useRef(null);
+
     // Close on click outside
     useEffect(() => {
         function onClickOutside(e) {
@@ -24,8 +26,35 @@ export default function ColorPicker({ color, onChange, className }) {
         return () => window.removeEventListener('mousedown', onClickOutside);
     }, [isOpen]);
 
+    // Cleanup timer on unmount
+    useEffect(() => {
+        return () => {
+            if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+        };
+    }, []);
+
+    const handleMouseEnter = () => {
+        if (closeTimerRef.current) {
+            clearTimeout(closeTimerRef.current);
+            closeTimerRef.current = null;
+        }
+    };
+
+    const handleMouseLeave = () => {
+        if (isOpen) {
+            closeTimerRef.current = setTimeout(() => {
+                setIsOpen(false);
+            }, 1000);
+        }
+    };
+
     return (
-        <div className="relative inline-block" ref={containerRef}>
+        <div
+            className="relative inline-block group"
+            ref={containerRef}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+        >
             {/* Color Trigger Circle */}
             <button
                 className={cn(
@@ -39,15 +68,20 @@ export default function ColorPicker({ color, onChange, className }) {
                 {/* Optional: Show check or icon if needed */}
             </button>
 
+            {/* Left Tooltip */}
+            <span className="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2 py-1 bg-black text-white text-[10px] font-medium rounded opacity-0 translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 whitespace-nowrap pointer-events-none z-50">
+                Colors
+            </span>
+
             {/* Popover */}
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        initial={{ opacity: 0, x: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                        exit={{ opacity: 0, x: 10, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute top-12 left-1/2 -translate-x-1/2 z-50 bg-white/90 backdrop-blur-xl border border-white/20 p-3 rounded-xl shadow-2xl w-[200px]"
+                        className="absolute right-12 top-0 z-50 bg-white/90 backdrop-blur-xl border border-white/20 p-3 rounded-xl shadow-2xl w-[200px]"
                     >
                         {/* Saturation/Hue Picker */}
                         <div className="custom-react-colorful mb-3 rounded-lg overflow-hidden">
@@ -88,7 +122,7 @@ export default function ColorPicker({ color, onChange, className }) {
                         </div>
 
                         {/* Arrow Tip */}
-                        <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white/90 backdrop-blur-xl border-t border-l border-white/20 rotate-45 transform origin-center" />
+                        <div className="absolute top-4 -right-1.5 w-3 h-3 bg-white/90 backdrop-blur-xl border-t border-r border-white/20 rotate-45 transform origin-center" />
                     </motion.div>
                 )}
             </AnimatePresence>

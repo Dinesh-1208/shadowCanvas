@@ -47,7 +47,7 @@ export default function CanvasPage() {
     }, [canvas]);
 
     return (
-        <div className="relative w-screen h-screen overflow-hidden" style={{ backgroundColor: canvas.backgroundColor }}>
+        <div className="relative w-screen h-screen overflow-hidden bg-gray-100 dark:bg-neutral-900">
             {/* 1. Full Screen Canvas Layer */}
             <div id="canvas-root" className="absolute inset-0 z-0">
                 <Canvas
@@ -71,6 +71,8 @@ export default function CanvasPage() {
                     backgroundColor={canvas.backgroundColor}
                     setBackgroundColor={canvas.changeBackgroundColor}
                     erasePath={canvas.erasePath}
+                    canvasSize={canvas.canvasSize}
+                    eraserSize={canvas.eraserSize}
                 />
             </div>
 
@@ -80,8 +82,7 @@ export default function CanvasPage() {
                 {/* Top Left: Menu & Title */}
                 <div className="absolute top-4 left-4 pointer-events-auto z-50 flex flex-col gap-2">
                     <CanvasHeader
-                        title={canvas.title}
-                        setTitle={canvas.setTitle}
+                        canvas={canvas}
                         onMenuClick={() => setMenuOpen(!isMenuOpen)}
                     />
 
@@ -95,8 +96,8 @@ export default function CanvasPage() {
                     )}
                 </div>
 
-                {/* Top Floating Toolbar */}
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 pointer-events-auto">
+                {/* Right Floating Toolbar (Vertical) */}
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-auto">
                     <Toolbar
                         tool={canvas.tool}
                         setTool={canvas.setTool}

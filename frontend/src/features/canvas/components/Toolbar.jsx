@@ -41,21 +41,21 @@ export default function Toolbar({
 
     return (
         <motion.div
-            initial={{ y: -50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="bg-white/80 backdrop-blur-xl border border-white/20 flex items-center p-1.5 rounded-full gap-1 shadow-2xl cursor-default ring-1 ring-black/5"
+            initial={{ x: 50, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            className="bg-white/90 backdrop-blur-xl border border-white/20 flex flex-col items-center p-2 rounded-full gap-2 shadow-2xl cursor-default ring-1 ring-black/5"
         >
 
             {/* Undo/Redo Group */}
-            <div className="flex items-center gap-1">
+            <div className="flex flex-col gap-1">
                 <ToolBtn label="Undo" onClick={undo} icon={Undo2} shortcut="Ctrl+Z" />
                 <ToolBtn label="Redo" onClick={redo} icon={Redo2} shortcut="Ctrl+Y" />
             </div>
 
-            <Separator orientation="vertical" className="h-6 mx-1" />
+            <Separator orientation="horizontal" className="w-6 mx-auto bg-black/10" />
 
             {/* Main Tools */}
-            <div className="flex items-center gap-1">
+            <div className="flex flex-col items-center gap-1">
                 {TOOLS.slice(0, 2).map(t => (
                     <ToolBtn
                         key={t.id}
@@ -67,12 +67,12 @@ export default function Toolbar({
                     />
                 ))}
 
-                <Separator orientation="vertical" className="h-4 mx-0.5 opacity-30" />
+                <Separator orientation="horizontal" className="w-4 mx-auto opacity-30 bg-black/10" />
 
                 {/* Shapes Dropdown through ShapeTool */}
-                <ShapeTool currentTool={tool} setTool={setTool} />
+                <ShapeTool currentTool={tool} setTool={setTool} vertical={true} />
 
-                <Separator orientation="vertical" className="h-4 mx-0.5 opacity-30" />
+                <Separator orientation="horizontal" className="w-4 mx-auto opacity-30 bg-black/10" />
 
                 {TOOLS.slice(2).map(t => {
                     const isActive = tool === t.id;
@@ -101,6 +101,7 @@ export default function Toolbar({
                                 onClick={() => setTool(t.id)}
                                 eraserSize={eraserSize}
                                 setEraserSize={setEraserSize}
+                                vertical={true}
                             />
                         );
                     }
@@ -117,15 +118,16 @@ export default function Toolbar({
                     );
                 })}
 
-                <Separator orientation="vertical" className="h-4 mx-0.5 opacity-30" />
+                <Separator orientation="horizontal" className="w-4 mx-auto opacity-30 bg-black/10" />
 
-                {/* Color Picker */}
+                {/* Color Picker Vertical */}
                 <ColorPicker
                     color={strokeColor}
                     onChange={setStrokeColor}
+                    vertical={true}
                 />
 
-                <Separator orientation="vertical" className="h-4 mx-0.5 opacity-30" />
+                <Separator orientation="horizontal" className="w-4 mx-auto opacity-30 bg-black/10" />
 
                 <ToolBtn
                     label="Clear Canvas"
@@ -137,14 +139,14 @@ export default function Toolbar({
                 />
             </div>
 
-            <Separator orientation="vertical" className="h-6 mx-1" />
+            <Separator orientation="horizontal" className="w-6 mx-auto bg-black/10" />
 
             {/* Zoom Controls */}
-            <div className="flex items-center gap-1 px-1">
+            <div className="flex flex-col items-center gap-1">
                 <Button
                     variant="ghost"
-                    size="sm"
-                    className="h-8 px-2 text-xs font-mono text-muted-foreground w-16"
+                    size="iconSm"
+                    className="text-[10px] font-mono text-muted-foreground w-8 h-8 rounded-full"
                     onClick={() => setZoom(1)}
                     title="Reset Zoom"
                 >
@@ -158,22 +160,30 @@ export default function Toolbar({
 
 // ─── Sub-components ───
 
+// ─── Sub-components ───
+
 function ToolBtn({ active, onClick, icon: Icon, label, className, shortcut }) {
     return (
-        <Button
-            variant="ghost"
-            size="iconSm"
-            onClick={onClick}
-            title={`${label} ${shortcut ? `(${shortcut})` : ''}`}
-            className={cn(
-                "transition-all duration-200",
-                active
-                    ? "bg-black text-white shadow-md hover:bg-black/90 hover:text-white"
-                    : "text-gray-500 hover:bg-black/5 hover:text-black",
-                className
-            )}
-        >
-            <Icon className="h-4 w-4" />
-        </Button>
+        <div className="relative group/btn flex items-center">
+            <Button
+                variant="ghost"
+                size="iconSm"
+                onClick={onClick}
+                className={cn(
+                    "transition-all duration-200",
+                    active
+                        ? "bg-black text-white shadow-md hover:bg-black/90 hover:text-white"
+                        : "text-gray-500 hover:bg-black/5 hover:text-black",
+                    className
+                )}
+            >
+                <Icon className="h-4 w-4" />
+            </Button>
+
+            {/* Left Tooltip */}
+            <span className="absolute right-full mr-2 px-2 py-1 bg-black text-white text-[10px] font-medium rounded opacity-0 translate-x-1 group-hover/btn:opacity-100 group-hover/btn:translate-x-0 transition-all duration-200 whitespace-nowrap pointer-events-none z-50">
+                {label} {shortcut && <span className="opacity-50 ml-1">({shortcut})</span>}
+            </span>
+        </div>
     );
 }

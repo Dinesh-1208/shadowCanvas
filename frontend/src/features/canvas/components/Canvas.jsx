@@ -7,7 +7,7 @@ export default function Canvas({
     currentStyle, zoom, setZoom, pan, setPan,
     addElement, deleteElement, moveElement, commitMove,
     resizeElement, commitResize, reorderElement, updateElement,
-    backgroundColor, setBackgroundColor, erasePath,
+    backgroundColor, setBackgroundColor, erasePath, canvasSize, eraserSize
 }) {
     const svgRef = useRef(null);
     const [drawing, setDrawing] = useState(null); // current in-progress element
@@ -98,7 +98,17 @@ export default function Canvas({
 
         // 1. Eraser Tool Logic
         if (tool === 'eraser') {
-            setDrawing({ type: 'eraser', lastX: pt.x, lastY: pt.y }); // Track start point
+            const currentEraserSize = elements?.[0]?.eraserSize || 10; // Fallback or pass prop
+            // Actually pass eraserSize property from parent is better, but let's check props
+            setDrawing({
+                type: 'eraser',
+                lastX: pt.x,
+                lastY: pt.y,
+                points: [{ x: pt.x, y: pt.y }],
+                strokeWidth: eraserSize || 10,
+                strokeColor: '#fafafa', // Always show white trail for feedback
+                fillColor: 'none'
+            });
             if (erasePath) erasePath([pt]); // Erase initial point
             return;
         }
@@ -252,8 +262,13 @@ export default function Canvas({
                 } else if (erasePath) {
                     erasePath([pt]);
                 }
-                // Update last pos
-                setDrawing(prev => ({ ...prev, lastX: pt.x, lastY: pt.y }));
+                // Update last pos AND store points for masking
+                setDrawing(prev => ({
+                    ...prev,
+                    lastX: pt.x,
+                    lastY: pt.y,
+                    points: [...(prev.points || []), { x: pt.x, y: pt.y }]
+                }));
             } else {
                 // rect, diamond, circle
                 setDrawing(prev => ({
@@ -287,6 +302,28 @@ export default function Canvas({
         // Finish drawing
         if (drawing) {
             let finalEl = drawing;
+
+            // ── Eraser Masking Logic ──
+            // If erasing on a colored background, creating a "white" stroke simulates erasing the background
+            if (drawing.type === 'eraser') {
+                // Only create mask if background is not default paper color
+                // We use #fafafa as default based on useCanvas init
+                if (backgroundColor !== '#fafafa' && backgroundColor !== '#ffffff') {
+                    addElement({
+                        type: 'freehand',
+                        x: 0, y: 0, // points are absolute
+                        points: drawing.points || [],
+                        strokeColor: '#fafafa', // Paper color
+                        strokeWidth: drawing.strokeWidth || 10,
+                        roughness: 0,
+                        opacity: 100,
+                        fillColor: 'none'
+                    });
+                }
+                setDrawing(null);
+                return;
+            }
+
             // Normalize negative width/height for shapes
             if (['rect', 'diamond', 'circle'].includes(drawing.type)) {
                 let { x, y, width, height } = drawing;
@@ -422,7 +459,7 @@ export default function Canvas({
             {/* Main drawing SVG */}
             <svg
                 ref={svgRef}
-                className={`w-full h-full absolute inset-0 touch-none ${cursorMap[tool] === 'grab' ? 'cursor-grab' : cursorMap[tool] === 'text' ? 'cursor-text' : cursorMap[tool] === 'crosshair' ? 'cursor-crosshair' : 'cursor-default'}`}
+                className={`w-full h-full absolute inset-0 touch-none bg-slate-200 ${cursorMap[tool] === 'grab' ? 'cursor-grab' : cursorMap[tool] === 'text' ? 'cursor-text' : cursorMap[tool] === 'crosshair' ? 'cursor-crosshair' : 'cursor-default'}`}
                 onPointerDown={onPointerDown}
                 onPointerMove={onPointerMove}
                 onPointerUp={onPointerUp}
@@ -430,17 +467,44 @@ export default function Canvas({
                 onWheel={onWheel}
             >
                 <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
-                    {/* Render all elements */}
-                    {elements.map(el => (
-                        <g key={el.id}>
-                            <ElementRenderer el={el} />
-                        </g>
-                    ))}
 
-                    {/* In-progress drawing preview */}
-                    {drawing && <ElementRenderer el={drawing} />}
+                    {/* Paper / Canvas Area */}
+                    <rect
+                        x={0}
+                        y={0}
+                        width={canvasSize?.width || 1080}
+                        height={canvasSize?.height || 720}
+                        fill={backgroundColor || '#ffffff'}
+                        stroke="#e2e8f0"
+                        strokeWidth={1}
+                        filter="drop-shadow(0 4px 6px rgb(0 0 0 / 0.1)) drop-shadow(0 2px 4px rgb(0 0 0 / 0.06))"
+                    />
 
-                    {/* Selection box + handles */}
+                    {/* Clip path to force elements inside canvas */}
+                    <defs>
+                        <clipPath id="canvas-clip">
+                            <rect
+                                x={0}
+                                y={0}
+                                width={canvasSize?.width || 1080}
+                                height={canvasSize?.height || 720}
+                            />
+                        </clipPath>
+                    </defs>
+
+                    <g clipPath="url(#canvas-clip)">
+                        {/* Render all elements */}
+                        {elements.map(el => (
+                            <g key={el.id}>
+                                <ElementRenderer el={el} />
+                            </g>
+                        ))}
+
+                        {/* In-progress drawing preview */}
+                        {drawing && <ElementRenderer el={drawing} />}
+                    </g>
+
+                    {/* Selection box + handles (outside clip to see handles) */}
                     {renderSelectionBox()}
                 </g>
             </svg>

@@ -52,12 +52,11 @@ export default function EraserTool({ active, onClick, eraserSize, setEraserSize 
     };
 
     return (
-        <div className="relative inline-block" ref={containerRef}>
+        <div className="relative inline-block group" ref={containerRef}>
             <Button
                 variant="ghost"
                 size="iconSm"
                 onClick={handleClick}
-                title={active ? "Eraser Size (Click to toggle)" : "Eraser"}
                 className={cn(
                     "transition-all duration-200 relative",
                     active
@@ -75,14 +74,19 @@ export default function EraserTool({ active, onClick, eraserSize, setEraserSize 
                 )}
             </Button>
 
+            {/* Left Tooltip */}
+            <span className="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2 py-1 bg-black text-white text-[10px] font-medium rounded opacity-0 translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 whitespace-nowrap pointer-events-none z-50">
+                Eraser (X)
+            </span>
+
             <AnimatePresence>
                 {isOpen && active && (
                     <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        initial={{ opacity: 0, x: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                        exit={{ opacity: 0, x: 10, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute top-12 left-1/2 -translate-x-1/2 z-50 bg-white/90 backdrop-blur-xl border border-white/20 p-4 rounded-xl shadow-2xl w-[180px] flex flex-col gap-3"
+                        className="absolute right-12 top-0 z-50 bg-white/90 backdrop-blur-xl border border-white/20 p-4 rounded-xl shadow-2xl w-[180px] flex flex-col gap-3"
                     >
                         <div className="flex justify-between items-center text-xs font-semibold text-gray-600">
                             <span>Size</span>
@@ -109,7 +113,7 @@ export default function EraserTool({ active, onClick, eraserSize, setEraserSize 
                         </div>
 
                         {/* Arrow Tip */}
-                        <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white/90 backdrop-blur-xl border-t border-l border-white/20 rotate-45 transform origin-center" />
+                        <div className="absolute top-3 -right-1.5 w-3 h-3 bg-white/90 backdrop-blur-xl border-t border-r border-white/20 rotate-45 transform origin-center" />
                     </motion.div>
                 )}
             </AnimatePresence>

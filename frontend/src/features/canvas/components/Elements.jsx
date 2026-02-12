@@ -179,6 +179,7 @@ export function ElementRenderer({ el }) {
         case 'circle': return <CircleElement el={el} />;
         case 'arrow': return <ArrowElement el={el} />;
         case 'freehand': return <FreehandElement el={el} />;
+        case 'eraser': return <FreehandElement el={el} />;
         case 'text': return <TextElement el={el} />;
         case 'image': return <ImageElement el={el} />;
         default: return null;
