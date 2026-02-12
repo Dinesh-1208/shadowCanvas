@@ -6,7 +6,8 @@ export default function Canvas({
     elements, selectedId, setSelectedId, tool,
     currentStyle, zoom, setZoom, pan, setPan,
     addElement, deleteElement, moveElement, commitMove,
-    resizeElement, commitResize, reorderElement,
+    resizeElement, commitResize, reorderElement, updateElement,
+    backgroundColor, setBackgroundColor, eraseAt,
 }) {
     const svgRef = useRef(null);
     const [drawing, setDrawing] = useState(null); // current in-progress element
@@ -97,16 +98,34 @@ export default function Canvas({
 
         // 1. Eraser Tool Logic
         if (tool === 'eraser') {
-            const clickedEl = findTopElement(pt.x, pt.y);
-            if (clickedEl) {
-                deleteElement(clickedEl.id);
-                return; // Stop event propagation
-            }
+            setDrawing({ type: 'eraser' }); // Hack: use drawing state to track "erasing" mode
+            return;
         }
 
         // 2. Pan Tool Logic (Spacebar or Hand tool)
         if (tool === 'hand' || e.buttons === 4 || spacePressed) {
             setPanning({ startX: e.clientX, startY: e.clientY, panX: pan.x, panY: pan.y });
+            return;
+        }
+
+        // 3. Paint Bucket / Fill Tool
+        if (tool === 'paint-bucket') {
+            const clickedEl = findTopElement(pt.x, pt.y);
+            if (clickedEl) {
+                if (clickedEl.type === 'text') {
+                    updateElement(clickedEl.id, { strokeColor: currentStyle.strokeColor });
+                } else if (['rect', 'circle', 'diamond'].includes(clickedEl.type)) {
+                    updateElement(clickedEl.id, { fillColor: currentStyle.strokeColor });
+                } else if (clickedEl.type === 'freehand') {
+                    // Fill freehand shape
+                    updateElement(clickedEl.id, { fillColor: currentStyle.strokeColor });
+                } else if (clickedEl.type === 'arrow') {
+                    updateElement(clickedEl.id, { strokeColor: currentStyle.strokeColor });
+                }
+            } else {
+                // Clicked on background
+                setBackgroundColor(currentStyle.strokeColor);
+            }
             return;
         }
 
@@ -215,6 +234,8 @@ export default function Canvas({
                 }));
             } else if (drawing.type === 'arrow') {
                 setDrawing(prev => ({ ...prev, x2: pt.x, y2: pt.y }));
+            } else if (drawing.type === 'eraser') {
+                if (eraseAt) eraseAt(pt.x, pt.y);
             } else {
                 // rect, diamond, circle
                 setDrawing(prev => ({
@@ -307,7 +328,7 @@ export default function Canvas({
     // ─── Find topmost element at point ────────────────────────
     function findTopElement(px, py) {
         for (let i = elements.length - 1; i >= 0; i--) {
-            if (hitTest(px, py, elements[i])) return elements[i];
+            if (hitTest(px, py, elements[i], { checkInside: tool === 'paint-bucket' })) return elements[i];
         }
         return null;
     }
@@ -380,17 +401,6 @@ export default function Canvas({
 
     return (
         <div className="w-full h-full overflow-hidden touch-none">
-            {/* Infinite grid background */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                <defs>
-                    <pattern id="grid" width={20 * zoom} height={20 * zoom} patternUnits="userSpaceOnUse"
-                        patternTransform={`translate(${pan.x % (20 * zoom)}, ${pan.y % (20 * zoom)})`}>
-                        <circle cx={1 * zoom} cy={1 * zoom} r={1 * zoom} fill="#d1d5db" />
-                    </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#grid)" />
-            </svg>
-
             {/* Main drawing SVG */}
             <svg
                 ref={svgRef}
@@ -417,41 +427,9 @@ export default function Canvas({
                 </g>
             </svg>
 
-            {/* Text editing overlay */}
-            {textEditing && (
-                <div
-                    className="text-input-overlay"
-                    style={{
-                        position: 'absolute',
-                        left: textEditing.x * zoom + pan.x,
-                        top: textEditing.y * zoom + pan.y,
-                        zIndex: 50,
-                    }}>
-                    <textarea
-                        ref={textRef}
-                        value={textInput}
-                        onChange={(e) => setTextInput(e.target.value)}
-                        onBlur={commitText}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitText(); }
-                            if (e.key === 'Escape') { setTextEditing(null); setTextInput(''); }
-                        }}
-                        style={{
-                            ...styles.textInput,
-                            fontSize: currentStyle.fontSize || 16,
-                            fontFamily: currentStyle.fontFamily === 'handwriting' ? "'Comic Sans MS', cursive"
-                                : currentStyle.fontFamily === 'code' ? "'Consolas', monospace"
-                                    : "'Inter', sans-serif",
-                            textAlign: currentStyle.textAlign || 'left',
-                            color: currentStyle.strokeColor || '#1f2937',
-                        }}
-                    />
-                </div>
-            )}
         </div>
     );
 }
-
 const styles = {
     canvasContainer: {
         width: '100%',

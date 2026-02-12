@@ -5,8 +5,9 @@ import { Button } from '../../../components/ui/button';
 import { Separator } from '../../../components/ui/separator';
 import {
     MousePointer2, Hand, Square, Circle, Diamond, ArrowRight, Pen, Type, Image as ImageIcon,
-    Undo2, Redo2, Eraser, Trash2
+    Undo2, Redo2, Eraser, Trash2, PaintBucket
 } from 'lucide-react';
+import ColorPicker from './ColorPicker';
 
 const TOOLS = [
     { id: 'select', label: 'Select', icon: MousePointer2 },
@@ -18,10 +19,11 @@ const TOOLS = [
     { id: 'pencil', label: 'Pencil', icon: Pen },
     { id: 'text', label: 'Text', icon: Type },
     { id: 'image', label: 'Image', icon: ImageIcon },
+    { id: 'paint-bucket', label: 'Paint Bucket', icon: PaintBucket },
     { id: 'eraser', label: 'Eraser', icon: Eraser },
 ];
 
-export default function Toolbar({ tool, setTool, undo, redo, zoom, setZoom, clearCanvas }) {
+export default function Toolbar({ tool, setTool, undo, redo, zoom, setZoom, clearCanvas, strokeColor, setStrokeColor }) {
     const fileRef = useRef(null);
 
     function handleImageUpload(e) {
@@ -39,7 +41,7 @@ export default function Toolbar({ tool, setTool, undo, redo, zoom, setZoom, clea
         <motion.div
             initial={{ y: -50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="bg-white border border-gray-200 flex items-center p-1.5 rounded-full gap-1 shadow-lg cursor-default"
+            className="bg-white/80 backdrop-blur-xl border border-white/20 flex items-center p-1.5 rounded-full gap-1 shadow-2xl cursor-default ring-1 ring-black/5"
         >
 
             {/* Undo/Redo Group */}
@@ -83,6 +85,14 @@ export default function Toolbar({ tool, setTool, undo, redo, zoom, setZoom, clea
 
                 <Separator orientation="vertical" className="h-4 mx-0.5 opacity-30" />
 
+                {/* Color Picker */}
+                <ColorPicker
+                    color={strokeColor}
+                    onChange={setStrokeColor}
+                />
+
+                <Separator orientation="vertical" className="h-4 mx-0.5 opacity-30" />
+
                 <ToolBtn
                     label="Clear Canvas"
                     onClick={() => {
@@ -117,11 +127,17 @@ export default function Toolbar({ tool, setTool, undo, redo, zoom, setZoom, clea
 function ToolBtn({ active, onClick, icon: Icon, label, className }) {
     return (
         <Button
-            variant={active ? "default" : "ghost"}
+            variant="ghost"
             size="iconSm"
             onClick={onClick}
             title={label}
-            className={cn(active ? "shadow-md" : "text-muted-foreground", className)}
+            className={cn(
+                "transition-all duration-200",
+                active
+                    ? "bg-black text-white shadow-md hover:bg-black/90 hover:text-white"
+                    : "text-gray-500 hover:bg-black/5 hover:text-black",
+                className
+            )}
         >
             <Icon className="h-4 w-4" />
         </Button>

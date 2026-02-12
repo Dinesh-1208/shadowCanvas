@@ -93,15 +93,46 @@ export function elementBBox(el) {
     }
 }
 
+// ─── Point inside polygon (Ray casting) ─────────────────────────
+export function pointInPolygon(px, py, points) {
+    if (!points || points.length < 3) return false;
+    let inside = false;
+    for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+        const xi = points[i].x, yi = points[i].y;
+        const xj = points[j].x, yj = points[j].y;
+
+        const intersect = ((yi > py) !== (yj > py)) &&
+            (px < (xj - xi) * (py - yi) / (yj - yi) + xi);
+
+        if (intersect) inside = !inside;
+    }
+    return inside;
+}
+
 // ─── Hit-test: does (px,py) hit this element? ───────────────────
-export function hitTest(px, py, el) {
+export function hitTest(px, py, el, options = {}) {
     if (!el) return false;
     const bb = elementBBox(el);
     if (!bb) return false;
 
+    // Optional: checkInside forces a check for interior even if not filled
+    const { checkInside = false } = options;
+
     switch (el.type) {
         case 'freehand':
-            return pointInRect(px, py, bb) && pointNearPath(px, py, el.points, 8);
+            // 1. Check inside if filled or requested
+            const isFilled = (el.fillColor && el.fillColor !== 'none') || checkInside;
+            if (isFilled && pointInPolygon(px, py, el.points)) {
+                return true;
+            }
+
+            // 2. Check near stroke (fallback)
+            // Optimization: check if inside expanded bbox first
+            if (!pointInRect(px, py, { x: bb.x - 4, y: bb.y - 4, width: bb.width + 8, height: bb.height + 8 })) {
+                return false;
+            }
+            return pointNearPath(px, py, el.points, 8);
+
         case 'circle': {
             const cx = el.x + el.width / 2;
             const cy = el.y + el.height / 2;
@@ -110,7 +141,11 @@ export function hitTest(px, py, el) {
             const dx = (px - cx) / rx;
             const dy = (py - cy) / ry;
             const d = dx * dx + dy * dy;
-            // Hit border or interior
+
+            // If checking inside (Paint Bucket), any point <= 1 is a hit.
+            if (checkInside && d <= 1.0) return true;
+
+            // Otherwise default to standard selection (stroke + small fill tolerance)
             return d <= 1.15;
         }
         case 'diamond': {
@@ -121,7 +156,6 @@ export function hitTest(px, py, el) {
             return Math.abs(px - cx) / hw + Math.abs(py - cy) / hh <= 1.1;
         }
         case 'arrow': {
-            // Line hit with threshold
             return dist(px, py, el.x1, el.y1, el.x2, el.y2) < 8 ||
                 pointInRect(px, py, bb);
         }
@@ -150,4 +184,40 @@ export function getResizeHandles(bb) {
 // ─── Snap value to grid ─────────────────────────────────────────
 export function snap(val, size = 10) {
     return Math.round(val / size) * size;
+}
+
+// ─── Erase from freehand stroke (split into segments) ────────────
+export function eraseFromFreehand(el, ex, ey, radius = 10) {
+    if (el.type !== 'freehand') return [el];
+
+    const oldPoints = el.points;
+    const newSegments = [];
+    let currentSegment = [];
+
+    for (let i = 0; i < oldPoints.length; i++) {
+        const p = oldPoints[i];
+        // Check if point is inside eraser radius
+        if (dist(p.x, p.y, ex, ey) > radius) {
+            // Keep point
+            currentSegment.push(p);
+        } else {
+            // Point is erased, cut segment if we have enough points
+            if (currentSegment.length > 2) {
+                newSegments.push(currentSegment);
+            }
+            currentSegment = [];
+        }
+    }
+    // Push last segment
+    if (currentSegment.length > 2) {
+        newSegments.push(currentSegment);
+    }
+
+    // Return new element definitions
+    // (We don't create full objects here, just the points/props needed)
+    return newSegments.map(pts => ({
+        ...el,
+        id: undefined, // New IDs will be generated
+        points: pts,
+    }));
 }

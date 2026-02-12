@@ -47,8 +47,7 @@ export default function CanvasPage() {
     }, [canvas]);
 
     return (
-        <div className="relative w-screen h-screen overflow-hidden bg-white">
-
+        <div className="relative w-screen h-screen overflow-hidden" style={{ backgroundColor: canvas.backgroundColor }}>
             {/* 1. Full Screen Canvas Layer */}
             <div id="canvas-root" className="absolute inset-0 z-0">
                 <Canvas
@@ -62,12 +61,16 @@ export default function CanvasPage() {
                     pan={canvas.pan}
                     setPan={canvas.setPan}
                     addElement={canvas.addElement}
+                    updateElement={canvas.updateElement}
                     deleteElement={canvas.deleteElement}
                     moveElement={canvas.moveElement}
                     commitMove={canvas.commitMove}
                     resizeElement={canvas.resizeElement}
                     commitResize={canvas.commitResize}
                     reorderElement={canvas.reorderElement}
+                    backgroundColor={canvas.backgroundColor}
+                    setBackgroundColor={canvas.changeBackgroundColor}
+                    eraseAt={canvas.eraseAt}
                 />
             </div>
 
@@ -102,6 +105,10 @@ export default function CanvasPage() {
                         zoom={canvas.zoom}
                         setZoom={canvas.setZoom}
                         clearCanvas={canvas.clearCanvas}
+                        strokeColor={canvas.strokeColor}
+                        setStrokeColor={canvas.setStrokeColor}
+                        fillColor={canvas.fillColor}
+                        setFillColor={canvas.setFillColor}
                     />
                 </div>
 

@@ -117,7 +117,7 @@ export function FreehandElement({ el }) {
     return (
         <path
             d={d}
-            fill="none"
+            fill={el.fillColor === 'none' ? 'none' : el.fillColor}
             stroke={el.strokeColor}
             strokeWidth={el.strokeWidth}
             strokeDasharray={dashArray(el.strokeStyle, el.strokeWidth)}

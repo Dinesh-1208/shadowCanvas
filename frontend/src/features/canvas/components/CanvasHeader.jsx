@@ -19,7 +19,7 @@ export function CanvasHeader({ title, setTitle, onMenuClick }) {
     }
 
     return (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 shadow-sm transition-all hover:shadow-md ring-1 ring-black/5">
             {/* Menu / Three Dots */}
             <Button
                 variant="ghost"
