@@ -7,7 +7,7 @@ const Footer = () => {
     return (
         <footer className="relative mt-20 border-t border-white/10 bg-white/5 backdrop-blur-xl">
             <div className="mx-auto max-w-7xl px-6 py-12 md:py-20">
-                <div className="grid grid-cols-1 gap-12 lg:grid-cols-4">
+                <div className="grid grid-cols-1 gap-12 lg:grid-cols-3">
                     {/* Brand Section */}
                     <div className="flex flex-col gap-6">
                         <div className="flex items-center gap-2">
@@ -21,39 +21,15 @@ const Footer = () => {
                         <p className="text-white/60 text-sm leading-relaxed max-w-xs">
                             The next generation whiteboard powered by AI. Visualize your thoughts, collaborate in real-time, and build faster.
                         </p>
-                        <div className="flex gap-4">
-                            <a href="#" className="text-white/40 hover:text-white transition-colors">
-                                <Twitter className="w-5 h-5" />
-                            </a>
-                            <a href="#" className="text-white/40 hover:text-white transition-colors">
-                                <Github className="w-5 h-5" />
-                            </a>
-                            <a href="#" className="text-white/40 hover:text-white transition-colors">
-                                <Linkedin className="w-5 h-5" />
-                            </a>
-                        </div>
                     </div>
 
                     {/* Links Sections */}
-                    <div className="grid grid-cols-2 gap-8 lg:col-span-2">
-                        <div className="flex flex-col gap-4">
-                            <h3 className="text-white font-semibold text-sm">Product</h3>
-                            <ul className="flex flex-col gap-2">
-                                <li><a href="#" className="text-white/60 hover:text-white transition-colors text-sm">Features</a></li>
-                                <li><a href="#" className="text-white/60 hover:text-white transition-colors text-sm">Templates</a></li>
-                                <li><a href="#" className="text-white/60 hover:text-white transition-colors text-sm">Integrations</a></li>
-                                <li><a href="#" className="text-white/60 hover:text-white transition-colors text-sm">Pricing</a></li>
-                            </ul>
-                        </div>
-                        <div className="flex flex-col gap-4">
-                            <h3 className="text-white font-semibold text-sm">Company</h3>
-                            <ul className="flex flex-col gap-2">
-                                <li><a href="#" className="text-white/60 hover:text-white transition-colors text-sm">About Us</a></li>
-                                <li><a href="#" className="text-white/60 hover:text-white transition-colors text-sm">Careers</a></li>
-                                <li><a href="#" className="text-white/60 hover:text-white transition-colors text-sm">Blog</a></li>
-                                <li><a href="#" className="text-white/60 hover:text-white transition-colors text-sm">Contact</a></li>
-                            </ul>
-                        </div>
+                    <div className="flex flex-col gap-4">
+                        <h3 className="text-white font-semibold text-sm">Company</h3>
+                        <ul className="flex flex-col gap-2">
+                            <li><a href="#" className="text-white/60 hover:text-white transition-colors text-sm">About Us</a></li>
+                            <li><a href="#" className="text-white/60 hover:text-white transition-colors text-sm">Contact</a></li>
+                        </ul>
                     </div>
 
                     {/* Newsletter Section */}
