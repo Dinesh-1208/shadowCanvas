@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 
+import { Link } from 'react-router-dom';
 import { MoreHorizontal } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 
@@ -20,6 +21,13 @@ export function CanvasHeader({ title, setTitle, onMenuClick }) {
 
     return (
         <div className="flex items-center gap-3">
+            {/* Logo/Home Link */}
+            <Link to="/" className="flex items-center gap-2 mr-4 hover:opacity-80 transition-opacity">
+                <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+                    <div className="w-4 h-4 bg-white rounded-sm rotate-45"></div>
+                </div>
+            </Link>
+
             {/* Menu / Three Dots */}
             <Button
                 variant="ghost"
