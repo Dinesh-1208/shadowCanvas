@@ -14,10 +14,12 @@ export default function PropertiesPanel({ canvas }) {
         strokeColor, setStrokeColor,
         fillColor, setFillColor,
         strokeWidth, setStrokeWidth,
+        eraserSize, setEraserSize,
         opacity, setOpacity,
         fontSize, setFontSize,
         fontFamily, setFontFamily,
-        deleteElement
+        deleteElement,
+        tool, // need tool to show eraser settings
     } = canvas;
 
     const selectedElement = selectedId ? elements.find(el => el.id === selectedId) : null;
@@ -55,6 +57,8 @@ export default function PropertiesPanel({ canvas }) {
                             <span className="text-muted-foreground">Grid</span>
                             <span className="text-xs font-medium text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 rounded">Active</span>
                         </div>
+
+
 
                         <Separator />
 

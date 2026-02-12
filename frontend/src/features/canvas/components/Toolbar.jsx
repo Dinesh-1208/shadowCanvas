@@ -4,26 +4,28 @@ import { motion } from 'framer-motion';
 import { Button } from '../../../components/ui/button';
 import { Separator } from '../../../components/ui/separator';
 import {
-    MousePointer2, Hand, Square, Circle, Diamond, ArrowRight, Pen, Type, Image as ImageIcon,
-    Undo2, Redo2, Eraser, Trash2, PaintBucket
+    MousePointer2, Hand, Pen, Type, Image as ImageIcon,
+    Undo2, Redo2, Trash2, PaintBucket
 } from 'lucide-react';
 import ColorPicker from './ColorPicker';
+import EraserTool from './EraserTool';
+import ShapeTool from './ShapeTool';
 
 const TOOLS = [
-    { id: 'select', label: 'Select', icon: MousePointer2 },
-    { id: 'hand', label: 'Hand', icon: Hand },
-    { id: 'rect', label: 'Rectangle', icon: Square },
-    { id: 'circle', label: 'Ellipse', icon: Circle },
-    { id: 'diamond', label: 'Diamond', icon: Diamond },
-    { id: 'arrow', label: 'Arrow', icon: ArrowRight },
-    { id: 'pencil', label: 'Pencil', icon: Pen },
-    { id: 'text', label: 'Text', icon: Type },
-    { id: 'image', label: 'Image', icon: ImageIcon },
-    { id: 'paint-bucket', label: 'Paint Bucket', icon: PaintBucket },
-    { id: 'eraser', label: 'Eraser', icon: Eraser },
+    { id: 'select', label: 'Select', icon: MousePointer2, shortcut: 'V' },
+    { id: 'hand', label: 'Hand', icon: Hand, shortcut: 'H' },
+    // Shapes are handled by ShapeTool
+    { id: 'pencil', label: 'Pencil', icon: Pen, shortcut: 'P' },
+    { id: 'text', label: 'Text', icon: Type, shortcut: 'T' },
+    { id: 'image', label: 'Image', icon: ImageIcon, shortcut: 'I' },
+    { id: 'paint-bucket', label: 'Paint Bucket', icon: PaintBucket, shortcut: 'B' },
+    { id: 'eraser', label: 'Eraser', icon: null, shortcut: 'X' }, // Icon handled by component
 ];
 
-export default function Toolbar({ tool, setTool, undo, redo, zoom, setZoom, clearCanvas, strokeColor, setStrokeColor }) {
+export default function Toolbar({
+    tool, setTool, undo, redo, zoom, setZoom, clearCanvas,
+    strokeColor, setStrokeColor, eraserSize, setEraserSize
+}) {
     const fileRef = useRef(null);
 
     function handleImageUpload(e) {
@@ -46,15 +48,33 @@ export default function Toolbar({ tool, setTool, undo, redo, zoom, setZoom, clea
 
             {/* Undo/Redo Group */}
             <div className="flex items-center gap-1">
-                <ToolBtn label="Undo" onClick={undo} icon={Undo2} />
-                <ToolBtn label="Redo" onClick={redo} icon={Redo2} />
+                <ToolBtn label="Undo" onClick={undo} icon={Undo2} shortcut="Ctrl+Z" />
+                <ToolBtn label="Redo" onClick={redo} icon={Redo2} shortcut="Ctrl+Y" />
             </div>
 
             <Separator orientation="vertical" className="h-6 mx-1" />
 
             {/* Main Tools */}
             <div className="flex items-center gap-1">
-                {TOOLS.map(t => {
+                {TOOLS.slice(0, 2).map(t => (
+                    <ToolBtn
+                        key={t.id}
+                        active={tool === t.id}
+                        label={t.label}
+                        onClick={() => setTool(t.id)}
+                        icon={t.icon}
+                        shortcut={t.shortcut}
+                    />
+                ))}
+
+                <Separator orientation="vertical" className="h-4 mx-0.5 opacity-30" />
+
+                {/* Shapes Dropdown through ShapeTool */}
+                <ShapeTool currentTool={tool} setTool={setTool} />
+
+                <Separator orientation="vertical" className="h-4 mx-0.5 opacity-30" />
+
+                {TOOLS.slice(2).map(t => {
                     const isActive = tool === t.id;
                     const Icon = t.icon;
 
@@ -67,9 +87,22 @@ export default function Toolbar({ tool, setTool, undo, redo, zoom, setZoom, clea
                                     label={t.label}
                                     onClick={() => fileRef.current?.click()}
                                     icon={Icon}
+                                    shortcut={t.shortcut}
                                 />
                             </React.Fragment>
                         )
+                    }
+
+                    if (t.id === 'eraser') {
+                        return (
+                            <EraserTool
+                                key={t.id}
+                                active={isActive}
+                                onClick={() => setTool(t.id)}
+                                eraserSize={eraserSize}
+                                setEraserSize={setEraserSize}
+                            />
+                        );
                     }
 
                     return (
@@ -79,6 +112,7 @@ export default function Toolbar({ tool, setTool, undo, redo, zoom, setZoom, clea
                             label={t.label}
                             onClick={() => setTool(t.id)}
                             icon={Icon}
+                            shortcut={t.shortcut}
                         />
                     );
                 })}
@@ -124,13 +158,13 @@ export default function Toolbar({ tool, setTool, undo, redo, zoom, setZoom, clea
 
 // ─── Sub-components ───
 
-function ToolBtn({ active, onClick, icon: Icon, label, className }) {
+function ToolBtn({ active, onClick, icon: Icon, label, className, shortcut }) {
     return (
         <Button
             variant="ghost"
             size="iconSm"
             onClick={onClick}
-            title={label}
+            title={`${label} ${shortcut ? `(${shortcut})` : ''}`}
             className={cn(
                 "transition-all duration-200",
                 active

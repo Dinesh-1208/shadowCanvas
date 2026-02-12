@@ -187,8 +187,19 @@ export function snap(val, size = 10) {
 }
 
 // ─── Erase from freehand stroke (split into segments) ────────────
-export function eraseFromFreehand(el, ex, ey, radius = 10) {
+export function eraseFromFreehand(el, ex, ey, radius = 5) {
     if (el.type !== 'freehand') return [el];
+
+    // Optimization: Check bounding box first
+    const bb = bboxFromPoints(el.points);
+    if (!pointInRect(ex, ey, {
+        x: bb.x - radius,
+        y: bb.y - radius,
+        width: bb.width + 2 * radius,
+        height: bb.height + 2 * radius
+    })) {
+        return [el];
+    }
 
     const oldPoints = el.points;
     const newSegments = [];

@@ -70,7 +70,7 @@ export default function CanvasPage() {
                     reorderElement={canvas.reorderElement}
                     backgroundColor={canvas.backgroundColor}
                     setBackgroundColor={canvas.changeBackgroundColor}
-                    eraseAt={canvas.eraseAt}
+                    erasePath={canvas.erasePath}
                 />
             </div>
 
@@ -109,6 +109,8 @@ export default function CanvasPage() {
                         setStrokeColor={canvas.setStrokeColor}
                         fillColor={canvas.fillColor}
                         setFillColor={canvas.setFillColor}
+                        eraserSize={canvas.eraserSize}
+                        setEraserSize={canvas.setEraserSize}
                     />
                 </div>
 

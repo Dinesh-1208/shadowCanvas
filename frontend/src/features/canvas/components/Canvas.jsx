@@ -7,7 +7,7 @@ export default function Canvas({
     currentStyle, zoom, setZoom, pan, setPan,
     addElement, deleteElement, moveElement, commitMove,
     resizeElement, commitResize, reorderElement, updateElement,
-    backgroundColor, setBackgroundColor, eraseAt,
+    backgroundColor, setBackgroundColor, erasePath,
 }) {
     const svgRef = useRef(null);
     const [drawing, setDrawing] = useState(null); // current in-progress element
@@ -98,7 +98,8 @@ export default function Canvas({
 
         // 1. Eraser Tool Logic
         if (tool === 'eraser') {
-            setDrawing({ type: 'eraser' }); // Hack: use drawing state to track "erasing" mode
+            setDrawing({ type: 'eraser', lastX: pt.x, lastY: pt.y }); // Track start point
+            if (erasePath) erasePath([pt]); // Erase initial point
             return;
         }
 
@@ -235,7 +236,24 @@ export default function Canvas({
             } else if (drawing.type === 'arrow') {
                 setDrawing(prev => ({ ...prev, x2: pt.x, y2: pt.y }));
             } else if (drawing.type === 'eraser') {
-                if (eraseAt) eraseAt(pt.x, pt.y);
+                // Interpolate
+                if (erasePath && drawing.lastX !== undefined) {
+                    const dist = Math.sqrt(Math.pow(pt.x - drawing.lastX, 2) + Math.pow(pt.y - drawing.lastY, 2));
+                    const steps = Math.ceil(dist / 2); // every 2px - smoother
+                    const path = [];
+                    for (let i = 1; i <= steps; i++) {
+                        const t = i / steps;
+                        path.push({
+                            x: drawing.lastX + (pt.x - drawing.lastX) * t,
+                            y: drawing.lastY + (pt.y - drawing.lastY) * t
+                        });
+                    }
+                    if (path.length > 0) erasePath(path);
+                } else if (erasePath) {
+                    erasePath([pt]);
+                }
+                // Update last pos
+                setDrawing(prev => ({ ...prev, lastX: pt.x, lastY: pt.y }));
             } else {
                 // rect, diamond, circle
                 setDrawing(prev => ({

@@ -14,6 +14,7 @@ export function useCanvas() {
     const [fillColor, setFillColor] = useState('none');
     const [backgroundColor, setBackgroundColor] = useState('#fafafa');
     const [strokeWidth, setStrokeWidth] = useState(2);
+    const [eraserSize, setEraserSize] = useState(10); // Default eraser size
     const [strokeStyle, setStrokeStyle] = useState('solid'); // solid | dashed | dotted
     const [roughness, setRoughness] = useState(0);
     const [edgeStyle, setEdgeStyle] = useState('rounded'); // rounded | sharp
@@ -312,63 +313,52 @@ export function useCanvas() {
     }
 
     // ─── Erase specific point (partial eraser) ──────────────────
-    function eraseAt(x, y) {
+    // ─── Erase along a path (partial eraser) ────────────────────
+    function erasePath(pathPoints) {
         setElements(prev => {
+            let currentElements = prev;
             let changed = false;
-            let newElements = [];
 
-            // We need to iterate carefully since we might split elements
-            // Using reduce or flatMap is safer
-            for (const el of prev) {
-                // Check if eraser touches this element
-                // hitTest with checkInside=false, but we need radius logic
-                // Reuse hitTest for bounding box check?
-                // Let's rely on geometry's check
+            // Apply erasure for each point in the path
+            // We use a loop here to sequentially apply cuts
+            // Optimization: Maybe we can check bbox once? 
+            // For now, simple loop over points, but careful about "currentElements"
 
-                if (el.type === 'freehand') {
-                    // Optimization: check rough bbox first
-                    // or just run eraseFromFreehand and see if it returns something different
-                    // We need a cheap check first
+            for (const pt of pathPoints) {
+                const nextElements = [];
+                let stepChanged = false;
 
-                    // Run split logic
-                    const segments = eraseFromFreehand(el, x, y, 10);
-
-                    // If result has 1 segment and same points, no change
-                    // Simplest check: compare length of points if 1 segment
-                    if (segments.length === 1 && segments[0].points.length === el.points.length) {
-                        newElements.push(el);
-                        continue;
-                    }
-
-                    // Changed!
-                    changed = true;
-                    segments.forEach(seg => {
-                        const newEl = { ...seg, id: uuidv4() }; // New ID for split parts
-                        newElements.push(newEl);
-                        // TODO: History? This is tricky for drag operations.
-                        // Maybe we assume history is handled on pointerUp?
-                        // For now, let's just make it work visually.
-                    });
-
-                } else {
-                    // Standard hit test for other shapes
-                    if (hitTest(x, y, el)) {
-                        changed = true;
-                        // Delete it (don't add to newElements)
+                for (const el of currentElements) {
+                    if (el.type === 'freehand') {
+                        const segments = eraseFromFreehand(el, pt.x, pt.y, eraserSize / 2);
+                        if (segments.length === 1 && segments[0].points.length === el.points.length) {
+                            nextElements.push(el);
+                        } else {
+                            stepChanged = true;
+                            segments.forEach(seg => {
+                                const newEl = { ...seg, id: uuidv4() };
+                                nextElements.push(newEl);
+                            });
+                        }
                     } else {
-                        newElements.push(el);
+                        // Shape eraser logic
+                        if (hitTest(pt.x, pt.y, el)) {
+                            stepChanged = true;
+                            // Delete
+                        } else {
+                            nextElements.push(el);
+                        }
                     }
+                }
+
+                if (stepChanged) {
+                    changed = true;
+                    currentElements = nextElements;
                 }
             }
 
             if (!changed) return prev;
-
-            // If changed, we aren't pushing to history here because it fires on Drag
-            // We should push a "Snapshot" or something?
-            // For now, visual feedback -> user can use "Delete" for full key.
-            // Wait, "Undo" is a requirement.
-
-            return newElements;
+            return currentElements;
         });
     }
 
@@ -493,6 +483,7 @@ export function useCanvas() {
         fillColor, setFillColor: wrappedSetFillColor,
         backgroundColor, setBackgroundColor,
         strokeWidth, setStrokeWidth: wrappedSetStrokeWidth,
+        eraserSize, setEraserSize,
         strokeStyle, setStrokeStyle: wrappedSetStrokeStyle,
         roughness, setRoughness: wrappedSetRoughness,
         edgeStyle, setEdgeStyle: wrappedSetEdgeStyle,
@@ -520,7 +511,7 @@ export function useCanvas() {
         redo,
         clearCanvas,
         changeBackgroundColor,
-        eraseAt,
+        erasePath,
         canvasId: canvasIdRef.current,
     };
 }
