@@ -1,8 +1,16 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
 const LandingPage = () => {
+    const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+
+    React.useEffect(() => {
+        const token = localStorage.getItem("token");
+        setIsAuthenticated(!!token);
+    }, []);
+
     return (
         <div className="min-h-screen bg-[#b2a4ff] relative overflow-hidden flex flex-col">
             {/* Background blobs for depth */}
@@ -30,9 +38,11 @@ const LandingPage = () => {
                     </p>
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                        <button className="px-8 py-3 bg-[#1a103d] text-white rounded-xl font-semibold shadow-xl hover:bg-[#251854] transition-all transform hover:-translate-y-1">
-                            Create Free Canvas
-                        </button>
+                        <Link to={isAuthenticated ? "/canvas" : "/login"}>
+                            <button className="px-8 py-3 bg-[#1a103d] text-white rounded-xl font-semibold shadow-xl hover:bg-[#251854] transition-all transform hover:-translate-y-1">
+                                {isAuthenticated ? "Open Canvas" : "Create Free Canvas"}
+                            </button>
+                        </Link>
                         <button className="px-8 py-3 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-xl font-semibold hover:bg-white/20 transition-all flex items-center gap-2">
                             <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center">
                                 <div className="w-0 h-0 border-t-[4px] border-t-transparent border-l-[6px] border-l-[#1a103d] border-b-[4px] border-b-transparent ml-0.5"></div>
