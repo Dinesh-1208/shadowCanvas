@@ -18,7 +18,7 @@ const Login = () => {
         const token = params.get("token");
         if (token) {
             localStorage.setItem("token", token);
-            navigate("/home");
+            navigate("/");
         }
     }, [location, navigate]);
 
@@ -30,7 +30,7 @@ const Login = () => {
         e.preventDefault();
         try {
             await authService.login(formData);
-            navigate("/home");
+            navigate("/");
         } catch (err) {
             setError(err.response?.data?.message || "Login failed");
         }
