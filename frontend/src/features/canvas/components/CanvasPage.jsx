@@ -7,8 +7,11 @@ import { CanvasHeader } from './CanvasHeader';
 import { cn } from '../../../lib/utils';
 // import '../styles/global.css'; // Imported in index.js usually, but ensuring it's loaded
 
+import { useLocation } from 'react-router-dom';
+
 export default function CanvasPage() {
-    const canvas = useCanvas();
+    const location = useLocation();
+    const canvas = useCanvas(location.state);
     const [isMenuOpen, setMenuOpen] = React.useState(false);
 
     // ─── Global shortcuts ────────────────────────────────────

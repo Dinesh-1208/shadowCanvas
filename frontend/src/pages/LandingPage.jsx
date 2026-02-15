@@ -1,13 +1,24 @@
 import React from "react";
+import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
 const LandingPage = () => {
+    const navigate = useNavigate();
+    const isAuthenticated = !!localStorage.getItem("token");
+
+    const handleCreateCanvas = () => {
+        if (isAuthenticated) {
+            navigate("/multi-canvas-lobby");
+        } else {
+            navigate("/login");
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[#b2a4ff] relative overflow-hidden flex flex-col">
             {/* Background blobs for depth */}
-            <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#9281ff] rounded-full blur-[120px] opacity-60"></div>
-            <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#c7bdff] rounded-full blur-[120px] opacity-60"></div>
+            {/* Background blobs removed for uniform look */}
 
             <div className="relative z-10 flex-grow">
                 <Navbar />
@@ -30,9 +41,13 @@ const LandingPage = () => {
                     </p>
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                        <button className="px-8 py-3 bg-[#1a103d] text-white rounded-xl font-semibold shadow-xl hover:bg-[#251854] transition-all transform hover:-translate-y-1">
+                        <button
+                            onClick={handleCreateCanvas}
+                            className="px-8 py-3 bg-[#1a103d] text-white rounded-xl font-semibold shadow-xl hover:bg-[#251854] transition-all transform hover:-translate-y-1"
+                        >
                             Create Free Canvas
                         </button>
+
                         <button className="px-8 py-3 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-xl font-semibold hover:bg-white/20 transition-all flex items-center gap-2">
                             <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center">
                                 <div className="w-0 h-0 border-t-[4px] border-t-transparent border-l-[6px] border-l-[#1a103d] border-b-[4px] border-b-transparent ml-0.5"></div>
