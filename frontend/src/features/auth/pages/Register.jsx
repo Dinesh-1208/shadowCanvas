@@ -30,7 +30,7 @@ const Register = () => {
                 email: formData.email,
                 password: formData.password,
             });
-            navigate("/");
+            navigate("/home");
         } catch (err) {
             setError(err.response?.data?.message || "Registration failed");
         }
