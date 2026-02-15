@@ -71,6 +71,14 @@ export function useCanvas(initialState) {
             return;
         }
 
+        // 1. Check if canvasId is passed via navigation state (e.g. from My Canvases page)
+        if (initialState?.canvasId) {
+            canvasIdRef.current = initialState.canvasId;
+            localStorage.setItem('sc_canvasId', initialState.canvasId);
+            loadCanvasFromBackend(initialState.canvasId);
+            return;
+        }
+
         const stored = localStorage.getItem('sc_canvasId');
         if (stored) {
             canvasIdRef.current = stored;
@@ -103,12 +111,16 @@ export function useCanvas(initialState) {
                 // 1. Load snapshot if available
                 if (data.snapshot) {
                     initialElements = data.snapshot.elements || [];
+                    if (data.snapshot.backgroundColor) {
+                        setBackgroundColor(data.snapshot.backgroundColor);
+                    }
                     eventOrderRef.current = data.snapshot.lastEventOrder || 0;
                 }
 
                 // 2. Replay subsequent events
-                const reconstructed = replayEvents(data.events, initialElements);
+                const { elements: reconstructed, backgroundColor: finalBg } = replayEvents(data.events, initialElements, data.snapshot?.backgroundColor);
                 setElements(reconstructed);
+                if (finalBg) setBackgroundColor(finalBg);
 
                 // Update event order to the last event
                 if (data.events.length > 0) {
@@ -125,8 +137,10 @@ export function useCanvas(initialState) {
         }
     }
 
-    function replayEvents(events, initialElements = []) {
+    function replayEvents(events, initialElements = [], initialBackgroundColor = '#fafafa') {
         let els = [...initialElements];
+        let currentBg = initialBackgroundColor;
+
         for (const ev of events) {
             switch (ev.eventType) {
                 case 'ADD_ELEMENT':
@@ -161,14 +175,20 @@ export function useCanvas(initialState) {
                     }
                     break;
                 }
+                case 'CHANGE_BACKGROUND':
+                    if (ev.eventData && ev.eventData.color) {
+                        currentBg = ev.eventData.color;
+                    }
+                    break;
                 case 'CLEAR_CANVAS':
                     els = [];
+                    currentBg = '#fafafa'; // Reset background on clear
                     break;
                 default:
                     break;
             }
         }
-        return els;
+        return { elements: els, backgroundColor: currentBg };
     }
 
     // ─── Persist event to backend (batched/debounced) ───────────
@@ -201,7 +221,7 @@ export function useCanvas(initialState) {
         if (eventOrderRef.current > 0 && eventOrderRef.current % 50 === 0) {
             console.log('Saving snapshot at event order:', eventOrderRef.current);
             try {
-                await saveSnapshot(canvasIdRef.current, elementsRef.current, eventOrderRef.current);
+                await saveSnapshot(canvasIdRef.current, elementsRef.current, eventOrderRef.current, backgroundColor);
             } catch (e) {
                 console.warn('Failed to save snapshot:', e);
             }

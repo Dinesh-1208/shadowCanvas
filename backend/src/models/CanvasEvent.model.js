@@ -24,6 +24,7 @@ const canvasEventSchema = new mongoose.Schema(
                 'RESIZE_ELEMENT',
                 'REORDER_ELEMENT',
                 'CLEAR_CANVAS',
+                'CHANGE_BACKGROUND',
             ],
         },
         eventData: {

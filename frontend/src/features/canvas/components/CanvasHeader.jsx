@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 
 import { Link } from 'react-router-dom';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, ArrowLeft } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import CanvasSettingsDialog from './CanvasSettingsDialog';
 
@@ -25,6 +25,13 @@ export function CanvasHeader({ canvas, onMenuClick }) {
     return (
         <>
             <div className="flex items-center gap-3">
+                {/* Back Button */}
+                <Link to="/my-canvases">
+                    <Button variant="ghost" size="iconSm" className="mr-2 text-gray-600 hover:text-gray-900">
+                        <ArrowLeft className="h-5 w-5" />
+                    </Button>
+                </Link>
+
                 {/* Logo/Home Link */}
                 <Link to="/" className="flex items-center gap-2 mr-4 hover:opacity-80 transition-opacity">
                     <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">

@@ -15,6 +15,10 @@ const canvasSchema = new mongoose.Schema(
             trim: true,
             default: 'Untitled Canvas',
         },
+        thumbnail: {
+            type: String, // Base64 data URL
+            default: '',
+        },
     },
     {
         timestamps: true, // auto createdAt, updatedAt

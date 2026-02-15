@@ -1,18 +1,47 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { useCanvas } from '../hooks/useCanvas';
 import Canvas from './Canvas';
 import Toolbar from './Toolbar';
 import PropertiesPanel from './PropertiesPanel';
 import { CanvasHeader } from './CanvasHeader';
 import { cn } from '../../../lib/utils';
-// import '../styles/global.css'; // Imported in index.js usually, but ensuring it's loaded
-
 import { useLocation } from 'react-router-dom';
+import { updateCanvasMetadata } from '../../../utils/api';
 
 export default function CanvasPage() {
     const location = useLocation();
     const canvas = useCanvas(location.state);
     const [isMenuOpen, setMenuOpen] = React.useState(false);
+    const canvasRef = useRef(null);
+    const thumbnailTimeoutRef = useRef(null);
+
+    // ─── Auto-save thumbnail ─────────────────────────────────
+    const saveThumbnail = useCallback(async () => {
+        if (!canvasRef.current || !canvas.canvasId) return;
+        try {
+            const dataUrl = await canvasRef.current.getSnapshot();
+            if (dataUrl) {
+                await updateCanvasMetadata(canvas.canvasId, { thumbnail: dataUrl });
+                console.log('Thumbnail saved');
+            }
+        } catch (error) {
+            console.error('Failed to save thumbnail', error);
+        }
+    }, [canvas.canvasId]);
+
+    useEffect(() => {
+        // Debounce thumbnail save
+        if (thumbnailTimeoutRef.current) clearTimeout(thumbnailTimeoutRef.current);
+
+        // Save thumbnail 0.8 seconds after last change
+        thumbnailTimeoutRef.current = setTimeout(() => {
+            saveThumbnail();
+        }, 800);
+
+        return () => {
+            if (thumbnailTimeoutRef.current) clearTimeout(thumbnailTimeoutRef.current);
+        };
+    }, [canvas.elements, canvas.backgroundColor, saveThumbnail]);
 
     // ─── Global shortcuts ────────────────────────────────────
     useEffect(() => {
@@ -54,6 +83,7 @@ export default function CanvasPage() {
             {/* 1. Full Screen Canvas Layer */}
             <div id="canvas-root" className="absolute inset-0 z-0">
                 <Canvas
+                    ref={canvasRef}
                     elements={canvas.elements}
                     selectedId={canvas.selectedId}
                     setSelectedId={canvas.setSelectedId}

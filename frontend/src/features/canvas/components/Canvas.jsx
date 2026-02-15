@@ -1,15 +1,78 @@
-import React, { useRef, useCallback, useEffect, useState } from 'react';
+import React, { useRef, useCallback, useEffect, useState, useImperativeHandle, forwardRef } from 'react';
 import { ElementRenderer } from './Elements';
 import { hitTest, elementBBox, getResizeHandles } from '../utils/geometry';
 
-export default function Canvas({
+const Canvas = forwardRef(({
     elements, selectedId, setSelectedId, tool,
     currentStyle, zoom, setZoom, pan, setPan,
     addElement, deleteElement, moveElement, commitMove,
     resizeElement, commitResize, reorderElement, updateElement,
     backgroundColor, setBackgroundColor, erasePath, canvasSize, eraserSize
-}) {
+}, ref) => {
     const svgRef = useRef(null);
+
+    useImperativeHandle(ref, () => ({
+        getSnapshot: async () => {
+            if (!svgRef.current) return '';
+
+            // 1. Serialize SVG
+            const serializer = new XMLSerializer();
+            const svgClone = svgRef.current.cloneNode(true);
+            const rect = svgRef.current.getBoundingClientRect();
+            svgClone.setAttribute("width", canvasSize?.width || 1080);
+            svgClone.setAttribute("height", canvasSize?.height || 720);
+            svgClone.setAttribute("viewBox", `0 0 ${canvasSize?.width || 1080} ${canvasSize?.height || 720}`);
+            svgClone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+
+            // Reset transform on the main group to ensure we capture the full canvas, not the zoomed/panned view
+            const mainGroup = svgClone.querySelector('g');
+            if (mainGroup) {
+                mainGroup.setAttribute('transform', 'translate(0, 0) scale(1)');
+            }
+
+            // Adjust clone for snapshot (reset transform to capture full canvas if needed, or just current view)
+            // For a thumbnail, we probably want the full extent or current view. 
+            // Current view is easier essentially what the user sees.
+            // Let's capture the current visible area as that's what a "thumbnail" usually implies in this context.
+
+            const svgString = serializer.serializeToString(svgClone);
+            const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(svgBlob);
+
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    // Thumbnail size
+                    const targetWidth = 320;
+                    const aspectRatio = (canvasSize?.height || 720) / (canvasSize?.width || 1080);
+                    const targetHeight = targetWidth * aspectRatio;
+
+                    canvas.width = targetWidth;
+                    canvas.height = targetHeight;
+                    const ctx = canvas.getContext('2d');
+
+                    // Fill background
+                    ctx.fillStyle = backgroundColor || '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    // Draw SVG image
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    URL.revokeObjectURL(url);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    console.log('Thumbnail generated, length:', dataUrl.length);
+                    resolve(dataUrl);
+                };
+                img.onerror = (e) => {
+                    console.error('Thumbnail generation failed', e);
+                    URL.revokeObjectURL(url);
+                    resolve('');
+                };
+                img.src = url;
+            });
+        }
+    }));
     const [drawing, setDrawing] = useState(null); // current in-progress element
     const [dragging, setDragging] = useState(null); // { startX, startY, elStartX, elStartY }
     const [resizing, setResizing] = useState(null); // { handleId, startX, startY, origBBox }
@@ -511,7 +574,9 @@ export default function Canvas({
 
         </div>
     );
-}
+});
+
+export default Canvas;
 const styles = {
     canvasContainer: {
         width: '100%',

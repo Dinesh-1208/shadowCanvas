@@ -15,9 +15,10 @@ router.use(protect);
 router.post('/create', async (req, res) => {
     try {
         const { title } = req.body;
+        const ownerId = req.user?.userId || 'single-user'; // Fallback if auth fails or not provided, though route is protected
 
         const canvas = new Canvas({
-            ownerId: 'single-user', // This works because we updated schema to Mixed
+            ownerId: ownerId,
             title: title || 'Untitled Canvas',
         });
 
@@ -39,10 +40,33 @@ router.post('/create', async (req, res) => {
     }
 });
 
+// ─── GET /canvas/my-canvases ─── Fetch all canvases for the authenticated user
+router.get('/my-canvases', async (req, res) => {
+    try {
+        const ownerId = req.user?.userId;
+
+        if (!ownerId) {
+            return res.status(400).json({ success: false, error: 'User ID not found in request' });
+        }
+
+        const canvases = await Canvas.find({ ownerId })
+            .select('_id title ownerId thumbnail updatedAt createdAt')
+            .sort({ updatedAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            canvases,
+        });
+    } catch (err) {
+        console.error('[Fetch My Canvases Error]', err);
+        res.status(500).json({ success: false, error: 'Failed to fetch canvases' });
+    }
+});
+
 // ─── POST /canvas/snapshot ─── Save a canvas snapshot
 router.post('/snapshot', async (req, res) => {
     try {
-        const { canvasId, elements, lastEventOrder } = req.body;
+        const { canvasId, elements, lastEventOrder, backgroundColor } = req.body;
 
         if (!canvasId || !elements || lastEventOrder === undefined) {
             return res.status(400).json({
@@ -54,6 +78,7 @@ router.post('/snapshot', async (req, res) => {
         const snapshot = new CanvasState({
             canvasId,
             elements,
+            backgroundColor: backgroundColor || '#fafafa',
             lastEventOrder
         });
 
@@ -134,10 +159,12 @@ router.get('/:canvasId/events', async (req, res) => {
 
         let query = { canvasId };
         let baseElements = [];
+        let baseBackgroundColor = '#fafafa';
         let snapshotOrder = 0;
 
         if (latestSnapshot) {
             baseElements = latestSnapshot.elements;
+            baseBackgroundColor = latestSnapshot.backgroundColor || '#fafafa';
             snapshotOrder = latestSnapshot.lastEventOrder;
             // Fetch only events AFTER the snapshot
             query.eventOrder = { $gt: snapshotOrder };
@@ -157,7 +184,7 @@ router.get('/:canvasId/events', async (req, res) => {
                 createdAt: canvas.createdAt,
                 updatedAt: canvas.updatedAt,
             },
-            snapshot: latestSnapshot ? { elements: baseElements, lastEventOrder: snapshotOrder } : null,
+            snapshot: latestSnapshot ? { elements: baseElements, backgroundColor: baseBackgroundColor, lastEventOrder: snapshotOrder } : null,
             events,
         });
     } catch (err) {
@@ -166,20 +193,20 @@ router.get('/:canvasId/events', async (req, res) => {
     }
 });
 
-// ─── PUT /canvas/:id ─── Update canvas metadata (e.g. title)
+// ─── PUT /canvas/:id ─── Update canvas metadata (e.g. title, thumbnail)
 router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { title } = req.body;
+        const { title, thumbnail } = req.body;
+        console.log(`[PUT /${id}] Received update. Keys: ${Object.keys(req.body)}, Thumbnail length: ${thumbnail ? thumbnail.length : 'N/A'}`);
+
+        const updateData = { updatedAt: new Date() };
+        if (title !== undefined) updateData.title = title;
+        if (thumbnail !== undefined) updateData.thumbnail = thumbnail;
 
         const canvas = await Canvas.findByIdAndUpdate(
             id,
-            {
-                $set: {
-                    title: title,
-                    updatedAt: new Date()
-                }
-            },
+            { $set: updateData },
             { new: true }
         );
 
@@ -198,6 +225,38 @@ router.put('/:id', async (req, res) => {
     } catch (err) {
         console.error('[Canvas Update Error]', err);
         res.status(500).json({ success: false, error: 'Failed to update canvas' });
+    }
+});
+
+// ─── GET /canvas/:id ─── Fetch canvas metadata by ID
+router.get('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const canvas = await Canvas.findById(id);
+
+        if (!canvas) {
+            return res.status(404).json({ success: false, error: 'Canvas not found' });
+        }
+
+        // Allow access if owner matches OR if it's a guest canvas 'single-user'
+        // In a real app, you might restrict 'single-user' access further, but for this feature it's needed.
+        if (canvas.ownerId !== 'single-user' && canvas.ownerId.toString() !== req.user.userId) {
+            return res.status(403).json({ success: false, error: 'Not authorized to view this canvas' });
+        }
+
+        res.json({
+            success: true,
+            canvas: {
+                _id: canvas._id,
+                title: canvas.title,
+                ownerId: canvas.ownerId,
+                updatedAt: canvas.updatedAt,
+                createdAt: canvas.createdAt,
+            },
+        });
+    } catch (err) {
+        console.error('[Canvas Metadata Error]', err);
+        res.status(500).json({ success: false, error: 'Failed to fetch canvas' });
     }
 });
 
