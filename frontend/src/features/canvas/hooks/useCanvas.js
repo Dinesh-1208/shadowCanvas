@@ -4,7 +4,9 @@ import { saveEvent, createCanvas, loadEvents, saveSnapshot } from '../../../util
 
 const BATCH_DELAY = 600; // ms — debounce before sending event to backend
 
-export function useCanvas() {
+export function useCanvas(initialState) {
+
+
     const [elements, setElements] = useState([]);
     const [selectedId, setSelectedId] = useState(null);
     const [title, setTitle] = useState('Untitled Canvas'); // Canvas Name
@@ -47,6 +49,15 @@ export function useCanvas() {
 
     // ─── Initialize or load canvas on mount ─────────────────────
     useEffect(() => {
+        if (initialState?.sessionConfig) {
+            // If coming from Multi-Canvas flow, prioritize that
+            const name = initialState.sessionConfig.sessionName || 'Shared Session';
+            // For now, we treat "Join" and "Create" similarly by creating a new local instance 
+            // since we don't have the full real-time backend hooked up yet.
+            initNewCanvas(name);
+            return;
+        }
+
         const stored = localStorage.getItem('sc_canvasId');
         if (stored) {
             canvasIdRef.current = stored;
@@ -55,11 +66,11 @@ export function useCanvas() {
             initNewCanvas();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [initialState]);
 
-    async function initNewCanvas() {
+    async function initNewCanvas(name = 'My Canvas') {
         try {
-            const data = await createCanvas('My Canvas');
+            const data = await createCanvas(name);
             if (data?.canvas?._id) {
                 canvasIdRef.current = data.canvas._id;
                 localStorage.setItem('sc_canvasId', data.canvas._id);
