@@ -195,9 +195,9 @@ const LandingPage = () => {
                             ))}
                         </div>
                     </motion.div>
-                </section>
+                </section >
                 {/* Security Section */}
-                <section id="security" className="py-24 px-6 max-w-7xl mx-auto">
+                < section id="security" className="py-24 px-6 max-w-7xl mx-auto" >
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
                         <motion.div
                             initial={{ opacity: 0, x: -30 }}
@@ -249,10 +249,10 @@ const LandingPage = () => {
                             ))}
                         </motion.div>
                     </div>
-                </section>
+                </section >
 
                 {/* Final CTA Section */}
-                <section className="py-32 px-6">
+                < section className="py-32 px-6" >
                     <motion.div
                         initial={{ opacity: 0, y: 40 }}
                         whileInView={{ opacity: 1, y: 0 }}
@@ -281,10 +281,10 @@ const LandingPage = () => {
                             </p>
                         </div>
                     </motion.div>
-                </section>
-            </div>
+                </section >
+            </div >
             <Footer />
-        </div>
+        </div >
     );
 };
 
