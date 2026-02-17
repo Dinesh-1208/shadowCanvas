@@ -7,12 +7,22 @@ import { CanvasHeader } from './CanvasHeader';
 import { cn } from '../../../lib/utils';
 // import '../styles/global.css'; // Imported in index.js usually, but ensuring it's loaded
 
-import { useLocation } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 
 export default function CanvasPage() {
+    const { roomCode } = useParams();
     const location = useLocation();
-    const canvas = useCanvas(location.state);
+    const canvas = useCanvas(location.state, roomCode);
     const [isMenuOpen, setMenuOpen] = React.useState(false);
+
+    const handleShare = () => {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url).then(() => {
+            alert('Sharing link copied to clipboard!');
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+        });
+    };
 
     // ─── Global shortcuts ────────────────────────────────────
     useEffect(() => {
@@ -75,39 +85,56 @@ export default function CanvasPage() {
             </div>
 
             {/* 2. UI Overlay Layer (Pointer events go through empty areas) */}
-            <div className="absolute inset-0 z-10 pointer-events-none">
+            <div className="absolute inset-x-0 top-0 z-10 pointer-events-none p-4">
 
-                {/* Top Left: Menu & Title */}
-                <div className="absolute top-4 left-4 pointer-events-auto z-50 flex flex-col gap-2">
-                    <CanvasHeader
-                        title={canvas.title}
-                        setTitle={canvas.setTitle}
-                        onMenuClick={() => setMenuOpen(!isMenuOpen)}
-                    />
+                {/* Top Bar: Robust 3-column layout */}
+                <div className="grid grid-cols-3 items-center w-full max-w-full gap-2 lg:gap-4">
 
-                    {/* Main Menu / Properties Panel Slide-out */}
-                    {isMenuOpen && (
-                        <div className="relative z-50">
-                            <div className="absolute top-0 left-0 w-56 max-h-[calc(100vh-100px)] overflow-y-auto rounded-xl shadow-2xl">
-                                <PropertiesPanel canvas={canvas} />
-                            </div>
+                    {/* Left side: Header (Logo + Title) and Share */}
+                    <div className="flex items-center gap-2 pointer-events-auto min-w-0 overflow-hidden">
+                        <CanvasHeader
+                            title={canvas.title}
+                            setTitle={canvas.setTitle}
+                            onMenuClick={() => setMenuOpen(!isMenuOpen)}
+                        />
+                        <button
+                            onClick={handleShare}
+                            className="h-10 px-3 sm:px-4 bg-[#1a103d] text-white rounded-xl font-semibold shadow-lg hover:bg-[#251854] transition-all flex items-center gap-2 shrink-0"
+                        >
+                            <span className="text-sm">🔗</span>
+                            <span className="hidden sm:inline text-sm">Share</span>
+                        </button>
+                    </div>
+
+                    {/* Center side: Floating Toolbar */}
+                    <div className="flex justify-center pointer-events-none">
+                        <div className="pointer-events-auto">
+                            <Toolbar
+                                tool={canvas.tool}
+                                setTool={canvas.setTool}
+                                undo={canvas.undo}
+                                redo={canvas.redo}
+                                zoom={canvas.zoom}
+                                setZoom={canvas.setZoom}
+                                clearCanvas={canvas.clearCanvas}
+                            />
                         </div>
-                    )}
+                    </div>
+
+                    {/* Right side: Actions / Status */}
+                    <div className="flex justify-end items-center gap-2 pointer-events-auto shrink-0">
+                        {/* Empty for now to preserve center alignment */}
+                    </div>
                 </div>
 
-                {/* Top Floating Toolbar */}
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 pointer-events-auto">
-                    <Toolbar
-                        tool={canvas.tool}
-                        setTool={canvas.setTool}
-                        undo={canvas.undo}
-                        redo={canvas.redo}
-                        zoom={canvas.zoom}
-                        setZoom={canvas.setZoom}
-                        clearCanvas={canvas.clearCanvas}
-                    />
-                </div>
-
+                {/* Main Menu / Properties Panel Slide-out */}
+                {isMenuOpen && (
+                    <div className="mt-4 pointer-events-none">
+                        <div className="w-64 max-h-[calc(100vh-100px)] overflow-y-auto rounded-xl shadow-2xl pointer-events-auto bg-white border border-gray-100">
+                            <PropertiesPanel canvas={canvas} />
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

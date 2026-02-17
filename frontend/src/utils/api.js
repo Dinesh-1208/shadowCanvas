@@ -5,8 +5,16 @@ const BASE = '/canvas';
 /**
  * POST /canvas/create — create a new canvas
  */
-export async function createCanvas(title = 'Untitled Canvas') {
-    const res = await axios.post(`${BASE}/create`, { title });
+export async function createCanvas(title = 'Untitled Canvas', roomCode) {
+    const res = await axios.post(`${BASE}/create`, { title, roomCode });
+    return res.data;
+}
+
+/**
+ * GET /canvas/room/:roomCode — find canvas by room code
+ */
+export async function getCanvasByRoom(roomCode) {
+    const res = await axios.get(`${BASE}/room/${roomCode}`);
     return res.data;
 }
 

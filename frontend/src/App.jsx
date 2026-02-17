@@ -7,8 +7,6 @@ import ResetPassword from "./features/auth/pages/ResetPassword";
 import CanvasPage from "./features/canvas/components/CanvasPage";
 
 import LandingPage from "./pages/LandingPage";
-import MultiCanvasInitialization from "./features/canvas/pages/MultiCanvasInitialization";
-
 import MultiCanvasLobby from "./features/canvas/pages/MultiCanvasLobby";
 import MultiCanvasJoin from "./features/canvas/pages/MultiCanvasJoin";
 
@@ -28,9 +26,9 @@ function App() {
         <Route path="/my-canvases" element={<MyCanvases />} />
         <Route path="/multi-canvas-lobby" element={<MultiCanvasLobby />} />
         <Route path="/multi-canvas-join" element={<MultiCanvasJoin />} />
-        <Route path="/multi-canvas-init" element={<MultiCanvasInitialization />} />
 
-        <Route path="/canvas" element={<CanvasPage />} />
+        <Route path="/canvas/:roomCode" element={<CanvasPage />} />
+        <Route path="/canvas" element={<Navigate to={`/canvas/${Math.random().toString(36).substring(2, 8).toUpperCase()}`} />} />
       </Routes>
     </Router>
   );

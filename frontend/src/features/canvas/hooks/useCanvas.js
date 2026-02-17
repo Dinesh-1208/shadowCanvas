@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { io } from 'socket.io-client';
 import { saveEvent, createCanvas, loadEvents, saveSnapshot } from '../../../utils/api';
 
 const BATCH_DELAY = 600; // ms — debounce before sending event to backend
 
-export function useCanvas(initialState) {
+export function useCanvas(initialState, roomCode) {
 
 
     const [elements, setElements] = useState([]);
@@ -42,6 +43,9 @@ export function useCanvas(initialState) {
     const backendReady = useRef(false);
     const elementsRef = useRef(elements); // Ref to access latest elements in flushEvents
 
+    // Socket.io
+    const socketRef = useRef(null);
+
     // Sync elementsRef
     useEffect(() => {
         elementsRef.current = elements;
@@ -49,28 +53,111 @@ export function useCanvas(initialState) {
 
     // ─── Initialize or load canvas on mount ─────────────────────
     useEffect(() => {
-        if (initialState?.sessionConfig) {
-            // If coming from Multi-Canvas flow, prioritize that
-            const name = initialState.sessionConfig.sessionName || 'Shared Session';
-            // For now, we treat "Join" and "Create" similarly by creating a new local instance 
-            // since we don't have the full real-time backend hooked up yet.
-            initNewCanvas(name);
-            return;
+        // Init Socket.io
+        const socket = io('http://localhost:5000', {
+            withCredentials: true,
+        });
+        socketRef.current = socket;
+
+        if (roomCode) {
+            socket.emit('join-room', roomCode);
         }
 
-        const stored = localStorage.getItem('sc_canvasId');
-        if (stored) {
-            canvasIdRef.current = stored;
-            loadCanvasFromBackend(stored);
-        } else {
-            initNewCanvas();
-        }
+        socket.on('canvas-update', (data) => {
+            const { eventType, eventData } = data;
+
+            setElements((prev) => {
+                let next = [...prev];
+                switch (eventType) {
+                    case 'ADD_ELEMENT':
+                        if (!next.find(e => e.id === eventData.id)) {
+                            next.push(eventData);
+                        }
+                        break;
+                    case 'UPDATE_ELEMENT':
+                    case 'MOVE_ELEMENT':
+                    case 'RESIZE_ELEMENT':
+                        next = next.map((e) => (e.id === eventData.id ? { ...e, ...eventData } : e));
+                        break;
+                    case 'DELETE_ELEMENT':
+                        next = next.filter((e) => e.id !== eventData.id);
+                        break;
+                    case 'REORDER_ELEMENT': {
+                        const { id, direction } = eventData;
+                        const idx = next.findIndex((e) => e.id === id);
+                        if (idx !== -1) {
+                            const [el] = next.splice(idx, 1);
+                            if (direction === 'forward') next.splice(Math.min(idx + 1, next.length), 0, el);
+                            else if (direction === 'backward') next.splice(Math.max(idx - 1, 0), 0, el);
+                            else if (direction === 'front') next.push(el);
+                            else if (direction === 'back') next.unshift(el);
+                        }
+                        break;
+                    }
+                    case 'CLEAR_CANVAS':
+                        next = [];
+                        break;
+                    default:
+                        break;
+                }
+                return next;
+            });
+        });
+
+        const setupCanvas = async () => {
+            if (roomCode) {
+                socket.emit('join-room', roomCode);
+
+                try {
+                    // 1. Try to find existing canvas by room code
+                    const data = await import('../../../utils/api').then(m => m.getCanvasByRoom(roomCode));
+                    if (data?.success && data.canvas?._id) {
+                        canvasIdRef.current = data.canvas._id;
+                        backendReady.current = true;
+                        loadCanvasFromBackend(data.canvas._id);
+                        return;
+                    }
+                } catch (e) {
+                    console.log('Room not found or backend error, checking creation flow');
+                }
+
+                // 2. If not found, and we are initiating a session, create it
+                if (initialState?.sessionConfig) {
+                    const name = initialState.sessionConfig.sessionName || 'Shared Session';
+                    initNewCanvas(name, roomCode);
+                } else {
+                    // Pasted link for a room that doesn't exist? 
+                    // For now, let's just create it to be user-friendly
+                    initNewCanvas('Shared Canvas', roomCode);
+                }
+            } else if (initialState?.sessionConfig) {
+                // Should not happen with new routing, but for safety
+                const name = initialState.sessionConfig.sessionName || 'Shared Session';
+                initNewCanvas(name);
+            } else {
+                const stored = localStorage.getItem('sc_canvasId');
+                if (stored) {
+                    canvasIdRef.current = stored;
+                    loadCanvasFromBackend(stored);
+                } else {
+                    initNewCanvas();
+                }
+            }
+        };
+
+        setupCanvas();
+
+        return () => {
+            socket.disconnect();
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [initialState]);
+    }, [initialState, roomCode]);
 
-    async function initNewCanvas(name = 'My Canvas') {
+    async function initNewCanvas(name = 'My Canvas', rCode) {
         try {
-            const data = await createCanvas(name);
+            // If no rCode provided, generate one for local/legacy flows
+            const finalRoomCode = rCode || Math.random().toString(36).substring(2, 8).toUpperCase();
+            const data = await createCanvas(name, finalRoomCode);
             if (data?.canvas?._id) {
                 canvasIdRef.current = data.canvas._id;
                 localStorage.setItem('sc_canvasId', data.canvas._id);
@@ -160,6 +247,15 @@ export function useCanvas(initialState) {
 
     // ─── Persist event to backend (batched/debounced) ───────────
     function persistEvent(eventType, eventData) {
+        // Emit via socket immediately for real-time sync
+        if (socketRef.current && roomCode) {
+            socketRef.current.emit('canvas-update', {
+                roomCode,
+                eventType,
+                eventData
+            });
+        }
+
         if (!backendReady.current || !canvasIdRef.current) return;
         eventOrderRef.current += 1;
         pendingEventsRef.current.push({ eventType, eventData, eventOrder: eventOrderRef.current });

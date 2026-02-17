@@ -37,10 +37,21 @@ export default function Toolbar({ tool, setTool, undo, redo, zoom, setZoom, clea
 
     return (
         <motion.div
+            drag
+            dragMomentum={false}
+            dragElastic={0.1}
             initial={{ y: -50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="bg-white border border-gray-200 flex items-center p-1.5 rounded-full gap-1 shadow-lg cursor-default"
+            className="bg-white border border-gray-200 flex items-center p-1 sm:p-1.5 rounded-full gap-0.5 sm:gap-1 shadow-lg cursor-grab active:cursor-grabbing"
         >
+            {/* Drag Handle Indicator */}
+            <div className="pl-2 pr-1 text-gray-300">
+                <div className="grid grid-cols-2 gap-0.5">
+                    {[...Array(6)].map((_, i) => (
+                        <div key={i} className="w-0.5 h-0.5 bg-current rounded-full" />
+                    ))}
+                </div>
+            </div>
 
             {/* Undo/Redo Group */}
             <div className="flex items-center gap-1">

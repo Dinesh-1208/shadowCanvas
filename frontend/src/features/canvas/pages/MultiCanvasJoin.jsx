@@ -32,13 +32,16 @@ const MultiCanvasJoin = () => {
             return;
         }
 
+        // Normalize room code to uppercase
+        const roomCode = formData.sessionId.trim().toUpperCase();
+
         // Navigate to canvas on "success"
-        navigate("/canvas", {
+        navigate(`/canvas/${roomCode}`, {
             state: {
                 sessionConfig: {
-                    sessionName: `Session ${formData.sessionId}`, // Mock name
+                    sessionName: `Session ${roomCode}`,
                     isJoin: true,
-                    sessionId: formData.sessionId,
+                    sessionId: roomCode,
                     password: formData.password
                 }
             }
