@@ -15,6 +15,12 @@ const canvasSchema = new mongoose.Schema(
             trim: true,
             default: 'Untitled Canvas',
         },
+        roomCode: {
+            type: String,
+            required: true,
+            unique: true,
+            uppercase: true,
+        },
     },
     {
         timestamps: true, // auto createdAt, updatedAt

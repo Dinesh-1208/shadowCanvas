@@ -9,11 +9,16 @@ const router = express.Router();
 // ─── POST /canvas/create ─── Create a new canvas (metadata only)
 router.post('/create', async (req, res) => {
     try {
-        const { title } = req.body;
+        const { title, roomCode } = req.body;
+
+        if (!roomCode) {
+            return res.status(400).json({ success: false, error: 'Room code is required' });
+        }
 
         const canvas = new Canvas({
-            ownerId: 'single-user', // This works because we updated schema to Mixed
+            ownerId: 'single-user',
             title: title || 'Untitled Canvas',
+            roomCode: roomCode.toUpperCase(),
         });
 
         await canvas.save();
@@ -23,6 +28,7 @@ router.post('/create', async (req, res) => {
             canvas: {
                 _id: canvas._id,
                 title: canvas.title,
+                roomCode: canvas.roomCode,
                 ownerId: canvas.ownerId,
                 createdAt: canvas.createdAt,
                 updatedAt: canvas.updatedAt,
@@ -108,6 +114,32 @@ router.post('/event', async (req, res) => {
     } catch (err) {
         console.error('[Canvas Event Error]', err);
         res.status(500).json({ success: false, error: 'Failed to save event' });
+    }
+});
+
+// ─── GET /canvas/room/:roomCode ─── Find canvas by room code
+router.get('/room/:roomCode', async (req, res) => {
+    try {
+        const { roomCode } = req.params;
+        const canvas = await Canvas.findOne({ roomCode: roomCode.toUpperCase() });
+
+        if (!canvas) {
+            return res.status(404).json({ success: false, error: 'Room not found' });
+        }
+
+        res.status(200).json({
+            success: true,
+            canvas: {
+                _id: canvas._id,
+                title: canvas.title,
+                roomCode: canvas.roomCode,
+                createdAt: canvas.createdAt,
+                updatedAt: canvas.updatedAt,
+            }
+        });
+    } catch (err) {
+        console.error('[Canvas Room Load Error]', err);
+        res.status(500).json({ success: false, error: 'Failed to load room' });
     }
 });
 

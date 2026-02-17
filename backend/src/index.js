@@ -39,7 +39,15 @@ app.get("/", (req, res) => {
   res.send("ShadowCanvas Backend is running");
 });
 
+import { createServer } from "http";
+import { initSocket } from "./socket.js";
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+const httpServer = createServer(app);
+
+// Initialize Socket.io
+initSocket(httpServer);
+
+httpServer.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);
 });

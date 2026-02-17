@@ -19,7 +19,17 @@ const MultiCanvasLobby = () => {
                     <div className="max-w-4xl w-full grid md:grid-cols-2 gap-8">
                         {/* Create Session Card */}
                         <div
-                            onClick={() => navigate('/multi-canvas-init')}
+                            onClick={() => {
+                                const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+                                navigate(`/canvas/${roomCode}`, {
+                                    state: {
+                                        sessionConfig: {
+                                            sessionName: 'New Collaborative Canvas',
+                                            roomCode
+                                        }
+                                    }
+                                });
+                            }}
                             className="bg-white/20 backdrop-blur-xl border border-white/30 rounded-3xl p-8 cursor-pointer hover:bg-white/30 transition-all transform hover:-translate-y-2 group"
                         >
                             <div className="h-16 w-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6 text-4xl group-hover:scale-110 transition-transform">

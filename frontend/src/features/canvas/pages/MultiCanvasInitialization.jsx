@@ -19,9 +19,12 @@ const MultiCanvasInitialization = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        // Generate a random 6-character alphanumeric room code
+        const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+
         // In a real app, we would make an API call to create the session here.
-        // For now, we'll just navigate to the multi-canvas page with the session info.
-        navigate("/canvas", { state: { sessionConfig: formData } });
+        // For now, we'll navigate directly to the canvas page with the room code.
+        navigate(`/canvas/${roomCode}`, { state: { sessionConfig: { ...formData, roomCode } } });
     };
 
     return (
