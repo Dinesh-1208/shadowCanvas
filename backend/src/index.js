@@ -4,6 +4,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import passport from "passport";
 import authRoutes from "./routes/auth.routes.js";
+import canvasRoutes from "./routes/canvas.js";
 import "./config/passport.js"; // Import passport config to load strategies
 
 dotenv.config();
@@ -11,7 +12,7 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
 app.use(cors({
   origin: ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174"],
   credentials: true
@@ -34,6 +35,7 @@ mongoose
 
 // Routes
 app.use("/auth", authRoutes);
+app.use("/api/canvas", canvasRoutes);
 
 app.get("/", (req, res) => {
   res.send("ShadowCanvas Backend is running");

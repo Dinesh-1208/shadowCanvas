@@ -47,12 +47,12 @@ const Navbar = () => {
             <Link to="/profile" className="text-white/80 hover:text-white transition-colors text-sm font-medium">
               My Profile
             </Link>
-            <Button
+            <button
               onClick={handleLogout}
-              className="bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-full px-6 py-2 transition-colors"
+              className="px-5 py-2 rounded-full bg-red-500 hover:bg-red-600 text-white font-semibold transition-all shadow-lg hover:shadow-red-500/30 active:scale-95"
             >
               Logout
-            </Button>
+            </button>
           </>
         ) : (
           <>

@@ -4,6 +4,7 @@ import Canvas from './Canvas';
 import Toolbar from './Toolbar';
 import PropertiesPanel from './PropertiesPanel';
 import { CanvasHeader } from './CanvasHeader';
+import { cn } from '../../../lib/utils';
 // import '../styles/global.css'; // Imported in index.js usually, but ensuring it's loaded
 
 import { useLocation, useParams } from 'react-router-dom';
@@ -14,14 +15,7 @@ export default function CanvasPage() {
     const canvas = useCanvas(location.state, roomCode);
     const [isMenuOpen, setMenuOpen] = React.useState(false);
 
-    const handleShare = () => {
-        const url = window.location.href;
-        navigator.clipboard.writeText(url).then(() => {
-            alert('Sharing link copied to clipboard!');
-        }).catch(err => {
-            console.error('Failed to copy: ', err);
-        });
-    };
+
 
     // ─── Global shortcuts ────────────────────────────────────
     useEffect(() => {
@@ -80,6 +74,7 @@ export default function CanvasPage() {
                     resizeElement={canvas.resizeElement}
                     commitResize={canvas.commitResize}
                     reorderElement={canvas.reorderElement}
+                    onThumbnailUpdate={canvas.updateThumbnail}
                 />
             </div>
 
@@ -96,13 +91,6 @@ export default function CanvasPage() {
                             setTitle={canvas.setTitle}
                             onMenuClick={() => setMenuOpen(!isMenuOpen)}
                         />
-                        <button
-                            onClick={handleShare}
-                            className="h-10 px-3 sm:px-4 bg-[#1a103d] text-white rounded-xl font-semibold shadow-lg hover:bg-[#251854] transition-all flex items-center gap-2 shrink-0"
-                        >
-                            <span className="text-sm">🔗</span>
-                            <span className="hidden sm:inline text-sm">Share</span>
-                        </button>
                     </div>
 
                     {/* Center side: Floating Toolbar */}

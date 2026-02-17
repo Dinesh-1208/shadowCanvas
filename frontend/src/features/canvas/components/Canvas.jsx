@@ -1,12 +1,15 @@
 import React, { useRef, useCallback, useEffect, useState } from 'react';
 import { ElementRenderer } from './Elements';
 import { hitTest, elementBBox, getResizeHandles } from '../utils/geometry';
+import { generateThumbnail } from '../utils/thumbnail';
+
 
 export default function Canvas({
     elements, selectedId, setSelectedId, tool,
     currentStyle, zoom, setZoom, pan, setPan,
     addElement, deleteElement, moveElement, commitMove,
-    resizeElement, commitResize,
+    resizeElement, commitResize, reorderElement,
+    onThumbnailUpdate, // New prop
 }) {
     const svgRef = useRef(null);
     const [drawing, setDrawing] = useState(null); // current in-progress element
@@ -41,6 +44,27 @@ export default function Canvas({
         window.addEventListener('sc:insert-image', onImage);
         return () => window.removeEventListener('sc:insert-image', onImage);
     }, [pan, zoom, currentStyle, addElement]);
+
+
+    // ─── Auto-Generate Thumbnail ──────────────────────────────
+    useEffect(() => {
+        if (!onThumbnailUpdate) return;
+
+        const timer = setTimeout(async () => {
+            console.log("Generating thumbnail...", elements.length);
+            try {
+                const dataUrl = await generateThumbnail(svgRef.current, elements);
+                console.log("Thumbnail generated size:", dataUrl ? dataUrl.length : 0);
+                if (dataUrl) {
+                    onThumbnailUpdate(dataUrl);
+                }
+            } catch (err) {
+                console.error("Thumbnail generation error:", err);
+            }
+        }, 1500); // Debounce 1.5s
+
+        return () => clearTimeout(timer);
+    }, [elements, onThumbnailUpdate]);
 
     // ─── Keyboard shortcuts ───────────────────────────────────
     useEffect(() => {
@@ -227,7 +251,7 @@ export default function Canvas({
     }
 
     // ─── POINTER UP ───────────────────────────────────────────
-    function onPointerUp() {
+    function onPointerUp(e) {
         // Finish panning
         if (panning) { setPanning(null); return; }
 

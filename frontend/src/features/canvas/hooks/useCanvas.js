@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { io } from 'socket.io-client';
-import { saveEvent, createCanvas, loadEvents, saveSnapshot } from '../../../utils/api';
+import { saveEvent, createCanvas, loadEvents, saveSnapshot, getCanvasByRoom, updateCanvasMetadata } from '../../../utils/api';
 
 const BATCH_DELAY = 600; // ms — debounce before sending event to backend
 
@@ -108,16 +108,24 @@ export function useCanvas(initialState, roomCode) {
             if (roomCode) {
                 socket.emit('join-room', roomCode);
 
+                // OPTIMIZATION: If we navigated here with a known canvasId (from MyCanvases), use it!
+                if (initialState?.canvasId) {
+                    canvasIdRef.current = initialState.canvasId;
+                    backendReady.current = true;
+                    loadCanvasFromBackend(initialState.canvasId);
+                    return;
+                }
+
                 try {
                     // 1. Try to find existing canvas by room code
-                    const data = await import('../../../utils/api').then(m => m.getCanvasByRoom(roomCode));
+                    const data = await getCanvasByRoom(roomCode);
                     if (data?.success && data.canvas?._id) {
                         canvasIdRef.current = data.canvas._id;
                         backendReady.current = true;
                         loadCanvasFromBackend(data.canvas._id);
                         return;
                     }
-                } catch {
+                } catch (e) {
                     console.log('Room not found or backend error, checking creation flow');
                 }
 
@@ -162,8 +170,11 @@ export function useCanvas(initialState, roomCode) {
                 canvasIdRef.current = data.canvas._id;
                 localStorage.setItem('sc_canvasId', data.canvas._id);
                 backendReady.current = true;
+                flushEvents(); // Flush any pending events that occurred during creation
+                flushEvents(); // Flush any pending events that occurred during creation
+                flushEvents(); // Flush any pending events that occurred during creation
             }
-        } catch {
+        } catch (e) {
             console.warn('Backend unavailable — running in offline mode');
             backendReady.current = false;
         }
@@ -191,7 +202,7 @@ export function useCanvas(initialState, roomCode) {
 
                 backendReady.current = true;
             }
-        } catch {
+        } catch (e) {
             console.warn('Could not load from backend — starting fresh');
             backendReady.current = false;
             // Create new canvas
@@ -256,7 +267,7 @@ export function useCanvas(initialState, roomCode) {
             });
         }
 
-        if (!backendReady.current || !canvasIdRef.current) return;
+        // Always queue events, even if backend is not ready yet
         eventOrderRef.current += 1;
         pendingEventsRef.current.push({ eventType, eventData, eventOrder: eventOrderRef.current });
 
@@ -265,6 +276,11 @@ export function useCanvas(initialState, roomCode) {
     }
 
     async function flushEvents() {
+        if (!backendReady.current || !canvasIdRef.current) {
+            // Keep events in queue, try again later or wait for init
+            return;
+        }
+
         const batch = [...pendingEventsRef.current];
         pendingEventsRef.current = [];
         for (const ev of batch) {
@@ -431,12 +447,16 @@ export function useCanvas(initialState, roomCode) {
     function setCanvasTitle(newTitle) {
         setTitle(newTitle);
         if (backendReady.current && canvasIdRef.current) {
-            import('../../../utils/api').then(({ updateCanvasMetadata }) => {
-                updateCanvasMetadata(canvasIdRef.current, { title: newTitle })
-                    .catch(err => console.error("Failed to save title", err));
-            });
+            updateCanvasMetadata(canvasIdRef.current, { title: newTitle })
+                .catch(err => console.error("Failed to save title", err));
         }
     }
+
+    const updateThumbnail = async (thumbnail) => {
+        if (!backendReady.current || !canvasIdRef.current) return;
+        updateCanvasMetadata(canvasIdRef.current, { thumbnail })
+            .catch(err => console.error("Failed to update thumbnail", err));
+    };
 
 
     // ─── Sync state with selection ──────────────────────────────
@@ -540,5 +560,6 @@ export function useCanvas(initialState, roomCode) {
         redo,
         clearCanvas,
         canvasId: canvasIdRef.current,
+        updateThumbnail,
     };
 }
