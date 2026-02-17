@@ -117,7 +117,7 @@ export function useCanvas(initialState, roomCode) {
                         loadCanvasFromBackend(data.canvas._id);
                         return;
                     }
-                } catch (e) {
+                } catch {
                     console.log('Room not found or backend error, checking creation flow');
                 }
 
@@ -163,7 +163,7 @@ export function useCanvas(initialState, roomCode) {
                 localStorage.setItem('sc_canvasId', data.canvas._id);
                 backendReady.current = true;
             }
-        } catch (e) {
+        } catch {
             console.warn('Backend unavailable — running in offline mode');
             backendReady.current = false;
         }
@@ -191,7 +191,7 @@ export function useCanvas(initialState, roomCode) {
 
                 backendReady.current = true;
             }
-        } catch (e) {
+        } catch {
             console.warn('Could not load from backend — starting fresh');
             backendReady.current = false;
             // Create new canvas

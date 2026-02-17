@@ -42,7 +42,7 @@ export async function loadEvents(canvasId) {
  * PUT /canvas/:id — update canvas metadata (title)
  */
 export async function updateCanvasMetadata(canvasId, { title }) {
-    const res = await axios.put(`${BASE}/${canvasId}`, { title });
+    await axios.put(`${BASE}/${canvasId}`, { title });
 }
 
 // ─── POST /canvas/snapshot ───
