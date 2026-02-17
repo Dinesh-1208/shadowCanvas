@@ -6,7 +6,7 @@ export default function Canvas({
     elements, selectedId, setSelectedId, tool,
     currentStyle, zoom, setZoom, pan, setPan,
     addElement, deleteElement, moveElement, commitMove,
-    resizeElement, commitResize, reorderElement,
+    resizeElement, commitResize,
 }) {
     const svgRef = useRef(null);
     const [drawing, setDrawing] = useState(null); // current in-progress element
@@ -227,7 +227,7 @@ export default function Canvas({
     }
 
     // ─── POINTER UP ───────────────────────────────────────────
-    function onPointerUp(e) {
+    function onPointerUp() {
         // Finish panning
         if (panning) { setPanning(null); return; }
 

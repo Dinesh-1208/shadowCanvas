@@ -33,7 +33,7 @@ const buttonVariants = cva(
     }
 )
 
-const Button = React.forwardRef(({ className, variant, size, asChild = false, ...props }, ref) => {
+const Button = React.forwardRef(({ className, variant, size, ...props }, ref) => {
     // Simple implementation without Slot for now if dependency missing, but user asked for shadcn-like.
     // Assuming Radix Slot not installed, I'll fallback to button
     const Comp = "button"
@@ -47,4 +47,5 @@ const Button = React.forwardRef(({ className, variant, size, asChild = false, ..
 })
 Button.displayName = "Button"
 
+// eslint-disable-next-line react-refresh/only-export-components
 export { Button, buttonVariants }

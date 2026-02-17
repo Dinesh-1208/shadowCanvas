@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { cn } from '../../../lib/utils';
+// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 import { Button } from '../../../components/ui/button';
 import { Separator } from '../../../components/ui/separator';
@@ -125,6 +126,7 @@ export default function Toolbar({ tool, setTool, undo, redo, zoom, setZoom, clea
 
 // ─── Sub-components ───
 
+// eslint-disable-next-line no-unused-vars
 function ToolBtn({ active, onClick, icon: Icon, label, className }) {
     return (
         <Button

@@ -4,7 +4,6 @@ import Canvas from './Canvas';
 import Toolbar from './Toolbar';
 import PropertiesPanel from './PropertiesPanel';
 import { CanvasHeader } from './CanvasHeader';
-import { cn } from '../../../lib/utils';
 // import '../styles/global.css'; // Imported in index.js usually, but ensuring it's loaded
 
 import { useLocation, useParams } from 'react-router-dom';
