@@ -7,9 +7,10 @@ import { motion } from "framer-motion";
 
 const LandingPage = () => {
     const navigate = useNavigate();
+    const isAuthenticated = !!localStorage.getItem("token");
 
     const handleGetStarted = () => {
-        navigate("/login");
+        navigate(isAuthenticated ? "/multi-canvas" : "/login");
     };
 
     const containerVariants = {
@@ -81,7 +82,7 @@ const LandingPage = () => {
                             onClick={handleGetStarted}
                             className="px-10 py-4 bg-[#1a103d] text-white rounded-2xl font-bold text-lg shadow-2xl hover:bg-[#251854] transition-all transform hover:-translate-y-1 active:scale-95"
                         >
-                            Get Started
+                            {isAuthenticated ? "Open Canvas" : "Get Started"}
                         </button>
                     </motion.div>
 
@@ -273,7 +274,7 @@ const LandingPage = () => {
                                 onClick={handleGetStarted}
                                 className="px-12 py-5 bg-[#1a103d] text-white rounded-2xl font-bold text-xl shadow-2xl hover:bg-[#251854] transition-all flex items-center gap-3 mx-auto mb-8"
                             >
-                                Get Started <MoveRight size={24} />
+                                {isAuthenticated ? "Open Canvas" : "Get Started"} <MoveRight size={24} />
                             </motion.button>
 
                             <p className="text-white/40 text-sm font-bold tracking-widest uppercase">
