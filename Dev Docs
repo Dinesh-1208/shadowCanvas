@@ -1,1 +1,102 @@
 
+ShadowCanvas – DevOps & Development Documentation
+Project Overview
+ShadowCanvas is a full-stack collaborative whiteboard application enabling real-time multi-user canvas editing, authentication, canvas sharing, and multi-canvas session management. The project follows structured DevOps practices including CI validation and protected branch workflows.
+Architecture Overview
+Frontend
+- React + Vite
+- Tailwind CSS
+- Socket.io client
+- Axios for REST APIs
+- React Router for navigation
+Backend
+- Node.js + Express
+- MongoDB (Mongoose ODM)
+- JWT authentication
+- Passport.js OAuth
+- Socket.io server for real-time sync
+Git Workflow Strategy
+The project follows a feature-branch development model.
+
+Branch Structure:
+- main → Stable branch
+- feature/* → New features
+- fix/* → Bug fixes
+
+Development Flow:
+1. Pull latest main
+2. Create feature branch
+3. Implement changes
+4. Commit & push branch
+5. Create Pull Request
+6. CI pipeline runs automatically
+7. Merge only if checks pass
+Continuous Integration (CI)
+CI Tool Used: GitHub Actions
+CI configuration files are located in .github/workflows/ and include:
+- frontend-ci.yml
+- backend-ci.yml
+Frontend Pipeline
+Stages:
+- Install dependencies (npm install)
+- Lint (npm run lint)
+- Build verification (npm run build)
+
+Purpose:
+- Enforce code quality
+- Ensure production build succeeds
+Backend Pipeline
+Stages:
+- Install dependencies (npm install)
+- Syntax validation (node --check src/index.js)
+
+Purpose:
+- Catch syntax errors
+- Ensure backend integrity
+Quality Gate Enforcement
+Pull Requests cannot be merged unless all CI checks pass. This enforces integration stability and prevents faulty code from entering the main branch.
+Security Practices
+- JWT authentication with expiration
+- bcrypt password hashing
+- OAuth 2.0 (Google & GitHub)
+- Secrets stored in .env (excluded from version control)
+- CI secrets managed using GitHub Actions Secrets
+Feature Contributions
+Authentication Redirect Fix:
+- Resolved post-login redirect loop
+- Corrected authentication state handling
+
+Canvas Sharing (Backend):
+- Implemented canvas sharing logic
+- Integrated authentication middleware
+
+MultiCanvas Lobby (Frontend):
+- Developed multi-canvas lobby page
+- Integrated routing and backend APIs
+Local Development Setup
+Backend Setup:
+cd backend
+npm install
+npm run dev
+
+Frontend Setup:
+cd frontend
+npm install
+npm run dev
+Current DevOps Implementation Status
+CI Pipeline: Implemented
+Branch Protection: Implemented
+Automated Linting: Implemented
+Production Deployment: Not yet implemented
+Containerization (Docker): Planned
+Automated Testing: Planned
+Monitoring: Planned
+Planned DevOps Enhancements
+- Docker containerization (frontend & backend)
+- Docker Compose for local orchestration
+- AWS EC2 deployment
+- MongoDB Atlas integration
+- Automated testing integration
+- Monitoring with Prometheus & Grafana
+DevOps Ownership Summary
+DevOps responsibilities in this sprint included implementing CI workflows, enforcing feature-branch strategy, debugging pipeline failures, maintaining PR-based integration, and ensuring code quality gates before merge.
