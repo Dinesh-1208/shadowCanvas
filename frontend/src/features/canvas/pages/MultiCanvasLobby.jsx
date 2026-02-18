@@ -20,7 +20,9 @@ const MultiCanvasLobby = () => {
                         {/* Create Session Card */}
                         <div
                             onClick={() => {
+                                // Generate a new room code client-side
                                 const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+                                // Navigate to the canvas page. The CanvasPage component will handle the actual creation via API.
                                 navigate(`/canvas/${roomCode}`, {
                                     state: {
                                         sessionConfig: {
