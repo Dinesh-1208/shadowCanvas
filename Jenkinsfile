@@ -1,23 +1,16 @@
 pipeline {
-    agent any
+    agent { label 'agent-vinod' }
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
-        DOCKER_USERNAME = 'yourdockerhubusername'
+        DOCKERHUB_CREDENTIALS = credentials('docker-hub_creds')
     }
 
     stages {
 
-        stage('Checkout Code') {
-            steps {
-                git 'https://github.com/Dinesh-1208/shadowCanvas.git'
-            }
-        }
-
         stage('Build Backend Image') {
             steps {
                 sh """
-                docker build -t $DOCKER_USERNAME/shadowcanvas-backend ./backend
+                docker build -t ${DOCKERHUB_CREDENTIALS_USR}/shadowcanvas-backend ./backend
                 """
             }
         }
@@ -25,7 +18,7 @@ pipeline {
         stage('Build Frontend Image') {
             steps {
                 sh """
-                docker build -t $DOCKER_USERNAME/shadowcanvas-frontend ./frontend
+                docker build -t ${DOCKERHUB_CREDENTIALS_USR}/shadowcanvas-frontend ./frontend
                 """
             }
         }
@@ -33,9 +26,9 @@ pipeline {
         stage('Docker Login & Push') {
             steps {
                 sh """
-                echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKER_USERNAME --password-stdin
-                docker push $DOCKER_USERNAME/shadowcanvas-backend
-                docker push $DOCKER_USERNAME/shadowcanvas-frontend
+                echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin
+                docker push ${DOCKERHUB_CREDENTIALS_USR}/shadowcanvas-backend
+                docker push ${DOCKERHUB_CREDENTIALS_USR}/shadowcanvas-frontend
                 """
             }
         }
