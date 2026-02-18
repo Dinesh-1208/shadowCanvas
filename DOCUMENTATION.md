@@ -622,3 +622,37 @@ Triggers on push/PR to `main`:
 3. Placeholder: Test and deploy steps
 
 > **Note:** Test suites and deployment steps are placeholders and require further implementation.
+
+## DevOps Contributions (Sprint 1)
+
+- Designed and implemented GitHub Actions CI pipelines
+- Configured automated lint + build validation for frontend
+- Implemented backend syntax validation workflow
+- Enforced branch-based development with PR validation
+- Standardized environment variable management
+- Documented system architecture and deployment plan
+
+
+Pipeline Diagram
+Developer Push → GitHub → GitHub Actions Trigger
+        │
+        ├── Frontend Job
+        │       ├── Install Dependencies
+        │       ├── Lint
+        │       └── Build
+        │
+        └── Backend Job
+                ├── Install Dependencies
+                └── Syntax Validation
+
+                
+FUTURE DEVOPS PLAN (for sprint-2)
+- Add Dockerfiles for frontend and backend
+- Implement docker-compose for local orchestration
+- Deploy backend to AWS EC2 with Docker
+- Deploy frontend to S3 + CloudFront
+- Add MongoDB Atlas production environment
+- Integrate automated testing in CI
+- Add monitoring with Prometheus + Grafana
+- Implement CD pipeline with staging and production environments
+
