@@ -8,7 +8,7 @@ export default function Canvas({
     elements, selectedId, setSelectedId, tool,
     currentStyle, zoom, setZoom, pan, setPan,
     addElement, deleteElement, moveElement, commitMove,
-    resizeElement, commitResize, reorderElement,
+    resizeElement, commitResize,
     onThumbnailUpdate, // New prop
 }) {
     const svgRef = useRef(null);
@@ -251,7 +251,7 @@ export default function Canvas({
     }
 
     // ─── POINTER UP ───────────────────────────────────────────
-    function onPointerUp(e) {
+    function onPointerUp() {
         // Finish panning
         if (panning) { setPanning(null); return; }
 
