@@ -38,6 +38,8 @@ function App() {
         <Route path="/multi-canvas-lobby" element={<MultiCanvasLobby />} />
         <Route path="/multi-canvas-join" element={<MultiCanvasJoin />} />
 
+        <Route path="/multi-canvas" element={<MultiCanvasLobby />} />
+        <Route path="/multi-canvas-join" element={<MultiCanvasJoin />} />
         <Route path="/canvas/:roomCode" element={<CanvasPage />} />
         <Route path="/canvas" element={<RandomRedirect />} />
 
