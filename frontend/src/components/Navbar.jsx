@@ -56,9 +56,6 @@ const Navbar = () => {
           </>
         ) : (
           <>
-            <Link to="/login" className="text-white/80 hover:text-white transition-colors text-sm font-medium">
-              Login
-            </Link>
             <Link to="/register">
               <Button className="bg-[#1a103d] hover:bg-[#251854] text-white rounded-full px-6 py-2 flex items-center gap-2 border-none">
                 Get Started
