@@ -35,6 +35,8 @@ function App() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/my-canvases" element={<MyCanvases />} />
+        <Route path="/multi-canvas-lobby" element={<MultiCanvasLobby />} />
+        <Route path="/multi-canvas-join" element={<MultiCanvasJoin />} />
 
         <Route path="/canvas/:roomCode" element={<CanvasPage />} />
         <Route path="/canvas" element={<RandomRedirect />} />

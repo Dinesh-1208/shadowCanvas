@@ -30,7 +30,7 @@ const Login = () => {
         e.preventDefault();
         try {
             await authService.login(formData);
-            navigate("/");
+            navigate("/my-canvases");
         } catch (err) {
             setError(err.response?.data?.message || "Login failed");
         }
