@@ -2,12 +2,12 @@ describe('ShadowCanvas Basic Flow', () => {
     it('loads the landing page', () => {
         cy.visit('/');
         cy.contains('ShadowCanvas');
-        cy.contains('Create Free Canvas');
+        cy.contains('Get Started');
     });
 
-    it('can navigate to login', () => {
+    it('can navigate to register via Get Started button', () => {
         cy.visit('/');
-        cy.contains('Login').click();
-        cy.url().should('include', '/login');
+        cy.contains('Get Started').first().click();
+        cy.url().should('include', '/register');
     });
 });
