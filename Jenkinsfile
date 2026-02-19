@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent { label 'agent-vinod' }
 
     environment {
         DOCKERHUB_CREDENTIALS = credentials('docker-hub_creds')
@@ -7,12 +7,6 @@ pipeline {
     }
 
     stages {
-
-        stage('Checkout Code') {
-            steps {
-                git 'https://github.com/Dinesh-1208/shadowCanvas.git'
-            }
-        }
 
         stage('Build Backend Image') {
             steps {
