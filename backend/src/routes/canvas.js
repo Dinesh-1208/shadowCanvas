@@ -40,6 +40,24 @@ router.post('/create', async (req, res) => {
             roomCode: roomCode.toUpperCase(),
         });
 
+        // Check if canvas with this roomCode already exists (Idempotency)
+        const existingCanvas = await Canvas.findOne({ roomCode: roomCode.toUpperCase() });
+
+        if (existingCanvas) {
+            return res.status(200).json({
+                success: true,
+                canvas: {
+                    _id: existingCanvas._id,
+                    title: existingCanvas.title,
+                    roomCode: existingCanvas.roomCode,
+                    ownerId: existingCanvas.ownerId,
+                    createdAt: existingCanvas.createdAt,
+                    updatedAt: existingCanvas.updatedAt,
+                },
+                message: 'Canvas already exists, returned existing one.'
+            });
+        }
+
         await canvas.save();
 
         res.status(201).json({

@@ -10,6 +10,7 @@ const LandingPage = () => {
     const isAuthenticated = !!localStorage.getItem("token");
 
     const handleGetStarted = () => {
+        // Explicitly navigate to the lobby. Do NOT create a canvas here.
         navigate(isAuthenticated ? "/multi-canvas" : "/login");
     };
 

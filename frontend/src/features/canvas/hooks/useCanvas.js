@@ -45,6 +45,7 @@ export function useCanvas(initialState, roomCode) {
 
     // Socket.io
     const socketRef = useRef(null);
+    const initializationStarted = useRef(false);
 
     // Sync elementsRef
     useEffect(() => {
@@ -131,24 +132,36 @@ export function useCanvas(initialState, roomCode) {
 
                 // 2. If not found, and we are initiating a session, create it
                 if (initialState?.sessionConfig) {
-                    const name = initialState.sessionConfig.sessionName || 'Shared Session';
-                    initNewCanvas(name, roomCode);
+                    if (!initializationStarted.current) {
+                        initializationStarted.current = true;
+                        const name = initialState.sessionConfig.sessionName || 'Shared Session';
+                        initNewCanvas(name, roomCode);
+                    }
                 } else {
-                    // Pasted link for a room that doesn't exist? 
+                    // Pasted link for a room that doesn't exist?
                     // For now, let's just create it to be user-friendly
-                    initNewCanvas('Shared Canvas', roomCode);
+                    if (!initializationStarted.current) {
+                        initializationStarted.current = true;
+                        initNewCanvas('Shared Canvas', roomCode);
+                    }
                 }
             } else if (initialState?.sessionConfig) {
                 // Should not happen with new routing, but for safety
-                const name = initialState.sessionConfig.sessionName || 'Shared Session';
-                initNewCanvas(name);
+                if (!initializationStarted.current) {
+                    initializationStarted.current = true;
+                    const name = initialState.sessionConfig.sessionName || 'Shared Session';
+                    initNewCanvas(name);
+                }
             } else {
                 const stored = localStorage.getItem('sc_canvasId');
                 if (stored) {
                     canvasIdRef.current = stored;
                     loadCanvasFromBackend(stored);
                 } else {
-                    initNewCanvas();
+                    if (!initializationStarted.current) {
+                        initializationStarted.current = true;
+                        initNewCanvas();
+                    }
                 }
             }
         };
