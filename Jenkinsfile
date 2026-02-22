@@ -8,43 +8,66 @@ pipeline {
 
     stages {
 
-        stage('Build Backend Image') {
+        stage('Checkout') {
             steps {
-                sh "docker build -t $DOCKER_USERNAME/shadowcanvas-backend ./backend"
+                git branch: 'sprint2-devops',
+                    url: 'https://github.com/Dinesh-1208/shadowCanvas.git'
             }
         }
 
-        stage('Build Frontend Image') {
+        stage('Install Backend Dependencies') {
             steps {
-                sh "docker build -t $DOCKER_USERNAME/shadowcanvas-frontend ./frontend"
+                dir('backend') {
+                    sh 'npm install'
+                }
             }
         }
 
-        stage('Docker Login & Push') {
+        stage('Run Backend Tests') {
             steps {
-                sh """
+                dir('backend') {
+                    sh 'npm test'
+                }
+            }
+        }
+
+        stage('Lint & Audit Backend') {
+            steps {
+                dir('backend') {
+                    sh 'npm audit || true'
+                }
+            }
+        }
+
+        stage('Build Docker Images') {
+            steps {
+                sh 'docker build -t $DOCKER_USERNAME/shadowcanvas-backend ./backend'
+                sh 'docker build -t $DOCKER_USERNAME/shadowcanvas-frontend ./frontend'
+            }
+        }
+
+        stage('Security Scan (Trivy)') {
+            steps {
+                sh 'trivy image $DOCKER_USERNAME/shadowcanvas-backend || true'
+            }
+        }
+
+        stage('Push Images') {
+            steps {
+                sh '''
                 echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKER_USERNAME --password-stdin
                 docker push $DOCKER_USERNAME/shadowcanvas-backend
                 docker push $DOCKER_USERNAME/shadowcanvas-frontend
-                """
+                '''
             }
         }
 
-        stage('Deploy on EC2') {
+        stage('Deploy with Docker Compose') {
             steps {
-                sh """
-                docker stop backend || true
-                docker stop frontend || true
-
-                docker rm backend || true
-                docker rm frontend || true
-
-                docker pull $DOCKER_USERNAME/shadowcanvas-backend
-                docker pull $DOCKER_USERNAME/shadowcanvas-frontend
-
-                docker run -d --name backend -p 5000:5000 $DOCKER_USERNAME/shadowcanvas-backend
-                docker run -d --name frontend -p 80:80 $DOCKER_USERNAME/shadowcanvas-frontend
-                """
+                sh '''
+                docker compose pull
+                docker compose up -d
+                '''
             }
         }
     }
