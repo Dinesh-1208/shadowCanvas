@@ -2,16 +2,15 @@ pipeline {
     agent { label 'agent-vinod' }
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('docker-hub_creds')
         DOCKER_USERNAME = 'himaneeshj'
+        DOCKERHUB_CREDENTIALS = credentials('docker-hub_creds')
     }
 
     stages {
 
         stage('Checkout') {
             steps {
-                git branch: 'sprint2-devops',
-                    url: 'https://github.com/Dinesh-1208/shadowCanvas.git'
+                checkout scm
             }
         }
 
@@ -23,13 +22,26 @@ pipeline {
             }
         }
 
-        stage('Run Backend Tests') {
-            steps {
-                dir('backend') {
-                    sh 'npm test'
-                }
+      stage('Run Backend Tests') {
+    steps {
+        dir('backend') {
+            withEnv([
+                "PORT=5000",
+                "MONGO_URI=dummy",
+                "JWT_SECRET=dummy",
+                "GOOGLE_CLIENT_ID=dummy_client_id",
+                "GOOGLE_CLIENT_SECRET=dummy_client_secret",
+                "GITHUB_CLIENT_ID=dummy",
+                "GITHUB_CLIENT_SECRET=dummy",
+                "FRONTEND_URL=http://localhost",
+                "EMAIL_USER=dummy",
+                "EMAIL_PASS=dummy"
+            ]) {
+                sh 'npm test'
             }
         }
+    }
+}
 
         stage('Lint & Audit Backend') {
             steps {
@@ -49,6 +61,7 @@ pipeline {
         stage('Security Scan (Trivy)') {
             steps {
                 sh 'trivy image $DOCKER_USERNAME/shadowcanvas-backend || true'
+                sh 'trivy image $DOCKER_USERNAME/shadowcanvas-frontend || true'
             }
         }
 
@@ -69,6 +82,21 @@ pipeline {
                 docker compose up -d
                 '''
             }
+        }
+
+        stage('Cleanup') {
+            steps {
+                sh 'docker system prune -f'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Sprint 2 Pipeline Completed Successfully"
+        }
+        failure {
+            echo "❌ Pipeline Failed"
         }
     }
 }
