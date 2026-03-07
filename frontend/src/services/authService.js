@@ -7,6 +7,7 @@ const register = async (userData) => {
     const response = await axios.post(`${API_URL}/auth/register`, userData);
     if (response.data.token) {
         localStorage.setItem("token", response.data.token);
+        localStorage.setItem("user", JSON.stringify(response.data.user));
     }
     return response.data;
 };
@@ -15,6 +16,7 @@ const login = async (userData) => {
     const response = await axios.post(`${API_URL}/auth/login`, userData);
     if (response.data.token) {
         localStorage.setItem("token", response.data.token);
+        localStorage.setItem("user", JSON.stringify(response.data.user));
     }
     return response.data;
 };
@@ -25,8 +27,9 @@ const logout = () => {
 };
 
 const getCurrentUser = () => {
-    const token = localStorage.getItem("token");
-    return token;
+    const userStr = localStorage.getItem("user");
+    if (!userStr) return null;
+    return JSON.parse(userStr);
 };
 
 const forgotPassword = async (email) => {

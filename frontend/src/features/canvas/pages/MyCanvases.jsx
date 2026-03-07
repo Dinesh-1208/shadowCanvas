@@ -3,6 +3,7 @@ import Footer from "../../../components/Footer";
 import { fetchUserCanvases, createCanvas, deleteCanvas } from "../../../utils/api";
 import { useNavigate } from "react-router-dom";
 import { Trash2, ArrowLeft } from "lucide-react";
+import authService from "../../../services/authService";
 
 const MyCanvases = () => {
     const [canvases, setCanvases] = useState([]);
@@ -138,16 +139,20 @@ const MyCanvases = () => {
                                         </div>
                                     </div>
                                     <div className="flex justify-between items-center mt-4">
-                                        <span className="text-xs px-2 py-1 bg-[#b2a4ff]/20 text-[#1a103d] rounded-full font-medium">
-                                            Private
-                                        </span>
-                                        <button
-                                            onClick={(e) => handleDelete(e, canvas._id)}
-                                            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
-                                            title="Delete Canvas"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs px-2 py-1 bg-[#b2a4ff]/20 text-[#1a103d] rounded-full font-medium">
+                                                {canvas.ownerId?._id === authService.getCurrentUser()?.id || canvas.ownerId === authService.getCurrentUser()?.id ? 'Owner' : 'Editor'}
+                                            </span>
+                                            {(canvas.ownerId?._id === authService.getCurrentUser()?.id || canvas.ownerId === authService.getCurrentUser()?.id) && (
+                                                <button
+                                                    onClick={(e) => handleDelete(e, canvas._id)}
+                                                    className="p-2 text-red-500 hover:text-white hover:bg-red-500 rounded-full transition-all border border-red-200"
+                                                    title="Delete Canvas"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>

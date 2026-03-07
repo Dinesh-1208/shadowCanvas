@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { MoreHorizontal, ArrowLeft } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 
-export function CanvasHeader({ title, setTitle, onMenuClick }) {
+export function CanvasHeader({ title, setTitle, onMenuClick, role }) {
     const [isEditing, setIsEditing] = useState(false);
     const [tempTitle, setTempTitle] = useState(title);
 
@@ -45,7 +45,7 @@ export function CanvasHeader({ title, setTitle, onMenuClick }) {
 
             {/* Editable Title */}
             <div className="relative group">
-                {isEditing ? (
+                {isEditing && role !== 'viewer' ? (
                     <input
                         autoFocus
                         value={tempTitle}
@@ -56,8 +56,8 @@ export function CanvasHeader({ title, setTitle, onMenuClick }) {
                     />
                 ) : (
                     <div
-                        onClick={() => setIsEditing(true)}
-                        className="text-sm font-semibold text-gray-900 cursor-text px-1 py-0.5 rounded hover:bg-gray-100 transition-colors"
+                        onClick={() => role !== 'viewer' && setIsEditing(true)}
+                        className={`text-sm font-semibold text-gray-900 px-1 py-0.5 rounded transition-colors ${role !== 'viewer' ? 'cursor-text hover:bg-gray-100' : 'cursor-default'}`}
                     >
                         {title}
                     </div>

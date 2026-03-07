@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE = 'http://localhost:5000/api/canvas';
+const BASE = 'http://localhost:3000/api/canvas';
 
 // Helper to get auth header
 const getAuthHeaders = () => {
@@ -25,7 +25,9 @@ export async function createCanvas(title = 'Untitled Canvas', roomCode) {
  * GET /canvas/room/:roomCode — find canvas by room code
  */
 export async function getCanvasByRoom(roomCode) {
-    const res = await axios.get(`${BASE}/room/${roomCode}`);
+    const res = await axios.get(`${BASE}/room/${roomCode}`, {
+        headers: getAuthHeaders()
+    });
     return res.data;
 }
 
@@ -46,7 +48,9 @@ export async function saveEvent({ canvasId, eventType, eventData, eventOrder }) 
  * GET /canvas/:canvasId/events — load all events for replay
  */
 export async function loadEvents(canvasId) {
-    const res = await axios.get(`${BASE}/${canvasId}/events`);
+    const res = await axios.get(`${BASE}/${canvasId}/events`, {
+        headers: getAuthHeaders()
+    });
     return res.data;
 }
 /**
@@ -90,3 +94,33 @@ export async function deleteCanvas(id) {
 
 // Alias for compatibility with User's MyCanvases.jsx
 export const fetchUserCanvases = getUserCanvases;
+
+/**
+ * ─── POST /canvas/request-edit ───
+ */
+export async function requestEditAccess(canvasId) {
+    const res = await axios.post(`${BASE}/request-edit`, { canvasId }, {
+        headers: getAuthHeaders()
+    });
+    return res.data;
+}
+
+/**
+ * ─── GET /canvas/edit-requests/:canvasId ───
+ */
+export async function getEditRequests(canvasId) {
+    const res = await axios.get(`${BASE}/edit-requests/${canvasId}`, {
+        headers: getAuthHeaders()
+    });
+    return res.data;
+}
+
+/**
+ * ─── POST /canvas/respond-edit-request ───
+ */
+export async function respondToEditRequest(canvasId, requestUserId, decision) {
+    const res = await axios.post(`${BASE}/respond-edit-request`, { canvasId, requestUserId, decision }, {
+        headers: getAuthHeaders()
+    });
+    return res.data;
+}

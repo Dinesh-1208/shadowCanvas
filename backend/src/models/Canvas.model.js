@@ -25,6 +25,24 @@ const canvasSchema = new mongoose.Schema(
             unique: true,
             uppercase: true,
         },
+        editors: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        }],
+        viewers: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        }],
+        shareLinks: [{
+            token: { type: String, required: true },
+            role: { type: String, enum: ['view', 'edit'], required: true },
+            createdAt: { type: Date, default: Date.now }
+        }],
+        editRequests: [{
+            userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+            status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+            createdAt: { type: Date, default: Date.now }
+        }]
     },
     {
         timestamps: true, // auto createdAt, updatedAt

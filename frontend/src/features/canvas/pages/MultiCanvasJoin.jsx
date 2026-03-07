@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import axios from "axios";
 import AuthCard from "../../auth/components/AuthCard";
 import "../../../styles/auth.css";
 
@@ -19,33 +20,23 @@ const MultiCanvasJoin = () => {
         e.preventDefault();
         setError("");
 
-        // TODO: Backend Verification Logic
-        // 1. Send POST request to /api/sessions/join with { sessionId, password }
-        // 2. If valid, backend returns session details and token
-        // 3. If invalid, set error message
+        try {
+            const roomCode = formData.sessionId.trim().toUpperCase();
+            const token = localStorage.getItem('token');
+            const res = await axios.post('http://localhost:3000/api/canvas/join',
+                { roomCode },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
 
-        console.log("Verifying session credentials...", formData);
-
-        // Mock verification for UI demo
-        if (formData.sessionId.length < 3) {
-            setError("Invalid Session ID");
-            return;
-        }
-
-        // Normalize room code to uppercase
-        const roomCode = formData.sessionId.trim().toUpperCase();
-
-        // Navigate to canvas on "success"
-        navigate(`/canvas/${roomCode}`, {
-            state: {
-                sessionConfig: {
-                    sessionName: `Session ${roomCode}`,
-                    isJoin: true,
-                    sessionId: roomCode,
-                    password: formData.password
-                }
+            if (res.data.success) {
+                navigate(`/canvas/${roomCode}`);
+            } else {
+                setError(res.data.error || "Failed to join room");
             }
-        });
+        } catch (err) {
+            console.error("Join session error", err);
+            setError(err.response?.data?.error || "Invalid Room Code or network error");
+        }
     };
 
     return (

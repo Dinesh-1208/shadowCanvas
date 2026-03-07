@@ -10,6 +10,7 @@ export default function Canvas({
     addElement, deleteElement, moveElement, commitMove,
     resizeElement, commitResize,
     onThumbnailUpdate, // New prop
+    role, // 'owner' | 'editor' | 'viewer'
 }) {
     const svgRef = useRef(null);
     const [drawing, setDrawing] = useState(null); // current in-progress element
@@ -76,10 +77,11 @@ export default function Canvas({
             }
 
             if (e.key === 'Delete' || e.key === 'Backspace') {
-                if (selectedId) { e.preventDefault(); deleteElement(selectedId); }
+                if (selectedId && role !== 'viewer') { e.preventDefault(); deleteElement(selectedId); }
             }
             if (e.ctrlKey || e.metaKey) {
                 if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); /* undo handled by parent */ }
+                if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); /* redo handled by parent */ }
             }
         }
 
@@ -121,6 +123,7 @@ export default function Canvas({
 
         // 1. Eraser Tool Logic
         if (tool === 'eraser') {
+            if (role === 'viewer') return;
             const clickedEl = findTopElement(pt.x, pt.y);
             if (clickedEl) {
                 deleteElement(clickedEl.id);
@@ -136,6 +139,7 @@ export default function Canvas({
 
         // ── Text tool ──
         if (tool === 'text') {
+            if (role === 'viewer') return;
             // Start text editing
             setTextEditing({ x: pt.x, y: pt.y });
             setTextInput('');
@@ -145,7 +149,7 @@ export default function Canvas({
         // ── Select tool ──
         if (tool === 'select') {
             // Check if clicking a resize handle
-            if (selectedId) {
+            if (selectedId && role !== 'viewer') {
                 const selEl = elements.find(el => el.id === selectedId);
                 if (selEl) {
                     const bb = elementBBox(selEl);
@@ -163,7 +167,9 @@ export default function Canvas({
             const hit = findTopElement(pt.x, pt.y);
             if (hit) {
                 setSelectedId(hit.id);
-                setDragging({ startX: pt.x, startY: pt.y, elId: hit.id });
+                if (role !== 'viewer') {
+                    setDragging({ startX: pt.x, startY: pt.y, elId: hit.id });
+                }
             } else {
                 setSelectedId(null);
             }
@@ -172,6 +178,7 @@ export default function Canvas({
 
         // ── Shape tools: rect, diamond, circle ──
         if (['rect', 'diamond', 'circle'].includes(tool)) {
+            if (role === 'viewer') return;
             setDrawing({
                 type: tool,
                 x: pt.x, y: pt.y,
@@ -183,6 +190,7 @@ export default function Canvas({
 
         // ── Arrow ──
         if (tool === 'arrow') {
+            if (role === 'viewer') return;
             setDrawing({
                 type: 'arrow',
                 x1: pt.x, y1: pt.y,
@@ -194,6 +202,7 @@ export default function Canvas({
 
         // ── Pencil / Freehand ──
         if (tool === 'pencil') {
+            if (role === 'viewer') return;
             setDrawing({
                 type: 'freehand',
                 points: [{ x: pt.x, y: pt.y }],

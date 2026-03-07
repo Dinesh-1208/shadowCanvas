@@ -8,20 +8,68 @@ import { CanvasHeader } from './CanvasHeader';
 // import '../styles/global.css'; // Imported in index.js usually, but ensuring it's loaded
 
 import { useLocation, useParams } from 'react-router-dom';
+import { requestEditAccess, getEditRequests, respondToEditRequest } from '../../../utils/api';
 
 export default function CanvasPage() {
     const { roomCode } = useParams();
     const location = useLocation();
     const canvas = useCanvas(location.state, roomCode);
     const [isMenuOpen, setMenuOpen] = React.useState(false);
+    const [editRequests, setEditRequests] = React.useState([]);
 
-    const handleShare = () => {
-        const url = window.location.href;
-        navigator.clipboard.writeText(url).then(() => {
-            alert('Sharing link copied to clipboard!');
-        }).catch(err => {
-            console.error('Failed to copy: ', err);
-        });
+    useEffect(() => {
+        if (canvas.role === 'owner' && canvas.canvasId) {
+            const fetchRequests = async () => {
+                try {
+                    const data = await getEditRequests(canvas.canvasId);
+                    if (data.success) {
+                        setEditRequests(data.requests);
+                    }
+                } catch (err) {
+                    console.error("Failed to fetch edit requests", err);
+                }
+            };
+            fetchRequests();
+            const interval = setInterval(fetchRequests, 30000); // 30s poll
+            return () => clearInterval(interval);
+        }
+    }, [canvas.role, canvas.canvasId]);
+
+    const handleRespond = async (requestUserId, decision) => {
+        try {
+            const data = await respondToEditRequest(canvas.canvasId, requestUserId, decision);
+            if (data.success) {
+                setEditRequests(prev => prev.filter(r => r.userId._id !== requestUserId));
+                alert(`Request ${decision}!`);
+            }
+        } catch (err) {
+            alert("Failed to respond to request");
+        }
+    };
+
+    const handleShare = async () => {
+        try {
+            const data = await axios.post('http://localhost:3000/api/canvas/generate-share-link', {
+                canvasId: canvas.canvasId,
+                role: 'view'
+            }, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+
+            if (data.data.success) {
+                const url = `${window.location.origin}/canvas/shared/${data.data.token}`;
+                navigator.clipboard.writeText(url).then(() => {
+                    alert('Sharing link (View-Only) copied to clipboard!');
+                });
+            }
+        } catch (err) {
+            console.error('Failed to generate share link: ', err);
+            // Fallback to room code URL if something fails
+            const url = window.location.href;
+            navigator.clipboard.writeText(url).then(() => {
+                alert('Room link copied to clipboard!');
+            });
+        }
     };
 
     // ─── Global shortcuts ────────────────────────────────────
@@ -59,6 +107,17 @@ export default function CanvasPage() {
         return () => window.removeEventListener('keydown', onKey);
     }, [canvas]);
 
+    const handleRequestEdit = async () => {
+        try {
+            const data = await requestEditAccess(canvas.canvasId);
+            if (data.success) {
+                alert("Edit access requested!");
+            }
+        } catch (err) {
+            alert(err.response?.data?.error || "Failed to request edit access");
+        }
+    };
+
     return (
         <div className="relative w-screen h-screen overflow-hidden bg-white">
 
@@ -82,11 +141,56 @@ export default function CanvasPage() {
                     commitResize={canvas.commitResize}
                     reorderElement={canvas.reorderElement}
                     onThumbnailUpdate={canvas.updateThumbnail}
+                    role={canvas.role}
                 />
             </div>
 
             {/* 2. UI Overlay Layer (Pointer events go through empty areas) */}
             <div className="absolute inset-x-0 top-0 z-10 pointer-events-none p-4">
+
+                {/* ── View Only Mode Banner ── */}
+                {canvas.role === 'viewer' && (
+                    <div className="flex justify-center mb-4">
+                        <div className="pointer-events-auto flex items-center gap-3 px-4 py-2 bg-amber-50 border border-amber-200 rounded-full shadow-sm">
+                            <span className="text-amber-600 text-lg">👁️</span>
+                            <span className="text-amber-800 font-medium text-sm">View Only Mode</span>
+                            <button
+                                onClick={handleRequestEdit}
+                                className="ml-2 px-3 py-1 bg-amber-600 text-white text-xs font-bold rounded-full hover:bg-amber-700 transition-colors shadow-sm"
+                            >
+                                Request Edit Access
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Edit Access Requests (For Owner) ── */}
+                {canvas.role === 'owner' && editRequests.length > 0 && (
+                    <div className="flex flex-col items-center gap-2 mb-4">
+                        {editRequests.map((req) => (
+                            <div key={req._id} className="pointer-events-auto flex items-center gap-4 px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-xl shadow-lg animate-in slide-in-from-top duration-300">
+                                <div className="flex flex-col">
+                                    <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Edit Request</span>
+                                    <span className="text-sm font-semibold text-indigo-900">{req.userId?.name || 'User'} wants to edit</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => handleRespond(req.userId._id, 'approved')}
+                                        className="h-8 px-3 bg-green-500 text-white text-xs font-bold rounded-lg hover:bg-green-600 transition-colors shadow-sm"
+                                    >
+                                        Approve
+                                    </button>
+                                    <button
+                                        onClick={() => handleRespond(req.userId._id, 'rejected')}
+                                        className="h-8 px-3 bg-gray-200 text-gray-700 text-xs font-bold rounded-lg hover:bg-gray-300 transition-colors"
+                                    >
+                                        Decline
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
 
                 {/* Top Bar: Robust 3-column layout */}
                 <div className="grid grid-cols-3 items-center w-full max-w-full gap-2 lg:gap-4">
@@ -96,6 +200,7 @@ export default function CanvasPage() {
                         <CanvasHeader
                             title={canvas.title}
                             setTitle={canvas.setTitle}
+                            role={canvas.role}
                             onMenuClick={() => setMenuOpen(!isMenuOpen)}
                         />
                         <button
@@ -109,7 +214,7 @@ export default function CanvasPage() {
 
                     {/* Center side: Floating Toolbar */}
                     <div className="flex justify-center pointer-events-none">
-                        <div className="pointer-events-auto">
+                        <div className={`pointer-events-auto ${canvas.role === 'viewer' ? 'grayscale opacity-50 pointer-events-none' : ''}`}>
                             <Toolbar
                                 tool={canvas.tool}
                                 setTool={canvas.setTool}

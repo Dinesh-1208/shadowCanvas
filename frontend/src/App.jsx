@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Login from "./features/auth/pages/Login";
 import Register from "./features/auth/pages/Register";
 import ForgotPassword from "./features/auth/pages/ForgotPassword";
@@ -12,6 +12,7 @@ import MultiCanvasJoin from "./features/canvas/pages/MultiCanvasJoin";
 
 import Profile from "./features/auth/pages/Profile";
 import MyCanvases from "./features/canvas/pages/MyCanvases";
+import SharedLinkJoin from "./features/canvas/pages/SharedLinkJoin";
 
 const RandomRedirect = () => {
   const [roomCode, setRoomCode] = React.useState(null);
@@ -24,6 +25,18 @@ const RandomRedirect = () => {
   return <Navigate to={`/canvas/${roomCode}`} replace />;
 };
 
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem('token');
+  const location = useLocation();
+
+  if (!token) {
+    // Redirect to login but save the current location to redirect back after login
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  return children;
+};
+
 function App() {
   return (
     <Router>
@@ -33,15 +46,16 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/my-canvases" element={<MyCanvases />} />
-        <Route path="/multi-canvas-lobby" element={<MultiCanvasLobby />} />
-        <Route path="/multi-canvas-join" element={<MultiCanvasJoin />} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/my-canvases" element={<ProtectedRoute><MyCanvases /></ProtectedRoute>} />
+        <Route path="/multi-canvas-lobby" element={<ProtectedRoute><MultiCanvasLobby /></ProtectedRoute>} />
+        <Route path="/multi-canvas-join" element={<ProtectedRoute><MultiCanvasJoin /></ProtectedRoute>} />
 
-        <Route path="/multi-canvas" element={<MultiCanvasLobby />} />
-        <Route path="/multi-canvas-join" element={<MultiCanvasJoin />} />
-        <Route path="/canvas/:roomCode" element={<CanvasPage />} />
-        <Route path="/canvas" element={<RandomRedirect />} />
+        <Route path="/multi-canvas" element={<ProtectedRoute><MultiCanvasLobby /></ProtectedRoute>} />
+        <Route path="/multi-canvas-join" element={<ProtectedRoute><MultiCanvasJoin /></ProtectedRoute>} />
+        <Route path="/canvas/shared/:token" element={<ProtectedRoute><SharedLinkJoin /></ProtectedRoute>} />
+        <Route path="/canvas/:roomCode" element={<ProtectedRoute><CanvasPage /></ProtectedRoute>} />
+        <Route path="/canvas" element={<ProtectedRoute><RandomRedirect /></ProtectedRoute>} />
 
         {/* Catch all - redirect to home */}
         <Route path="*" element={<Navigate to="/" replace />} />

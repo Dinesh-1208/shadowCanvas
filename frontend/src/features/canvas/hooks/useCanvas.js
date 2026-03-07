@@ -30,6 +30,7 @@ export function useCanvas(initialState, roomCode) {
 
     const [zoom, setZoom] = useState(1);
     const [pan, setPan] = useState({ x: 0, y: 0 });
+    const [role, setRole] = useState('viewer'); // 'owner' | 'editor' | 'viewer'
 
     // Undo / Redo stacks
     const undoStack = useRef([]);
@@ -122,6 +123,7 @@ export function useCanvas(initialState, roomCode) {
                     const data = await getCanvasByRoom(roomCode);
                     if (data?.success && data.canvas?._id) {
                         canvasIdRef.current = data.canvas._id;
+                        setRole(data.canvas.role || 'viewer');
                         backendReady.current = true;
                         loadCanvasFromBackend(data.canvas._id);
                         return;
@@ -182,6 +184,7 @@ export function useCanvas(initialState, roomCode) {
             if (data?.canvas?._id) {
                 canvasIdRef.current = data.canvas._id;
                 localStorage.setItem('sc_canvasId', data.canvas._id);
+                setRole('owner');
                 backendReady.current = true;
                 flushEvents(); // Flush any pending events that occurred during creation
                 flushEvents(); // Flush any pending events that occurred during creation
@@ -207,6 +210,7 @@ export function useCanvas(initialState, roomCode) {
                 // 2. Replay subsequent events
                 const reconstructed = replayEvents(data.events, initialElements);
                 setElements(reconstructed);
+                setRole(data.canvas.role || 'viewer');
 
                 // Update event order to the last event
                 if (data.events.length > 0) {
@@ -271,6 +275,8 @@ export function useCanvas(initialState, roomCode) {
 
     // ─── Persist event to backend (batched/debounced) ───────────
     function persistEvent(eventType, eventData) {
+        if (role === 'viewer') return; // Guard against viewer edits
+
         // Emit via socket immediately for real-time sync
         if (socketRef.current && roomCode) {
             socketRef.current.emit('canvas-update', {
@@ -574,5 +580,6 @@ export function useCanvas(initialState, roomCode) {
         clearCanvas,
         canvasId: canvasIdRef.current,
         updateThumbnail,
+        role,
     };
 }
