@@ -30,7 +30,13 @@ const Login = () => {
         e.preventDefault();
         try {
             await authService.login(formData);
-            navigate("/my-canvases");
+            const redirectUrl = localStorage.getItem('sc_redirectContext');
+            if (redirectUrl) {
+                localStorage.removeItem('sc_redirectContext');
+                navigate(redirectUrl);
+            } else {
+                navigate("/my-canvases");
+            }
         } catch (err) {
             setError(err.response?.data?.message || "Login failed");
         }
