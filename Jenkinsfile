@@ -54,7 +54,7 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 sh 'docker build -t $DOCKER_USERNAME/shadowcanvas-backend ./backend'
-                sh 'docker build -t $DOCKER_USERNAME/shadowcanvas-frontend ./frontend'
+                sh 'docker build --build-arg VITE_API_URL=http://56.228.14.239:5000 -t $DOCKER_USERNAME/shadowcanvas-frontend ./frontend'
             }
         }
 
