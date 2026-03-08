@@ -10,6 +10,8 @@ export default function Canvas({
     addElement, deleteElement, moveElement, commitMove,
     resizeElement, commitResize,
     onThumbnailUpdate, // New prop
+    isReadOnly,
+    onCursorMove
 }) {
     const svgRef = useRef(null);
     const [drawing, setDrawing] = useState(null); // current in-progress element
@@ -119,6 +121,15 @@ export default function Canvas({
         e.preventDefault();
         const pt = getSVGPoint(e);
 
+        // Pan Tool Logic (Spacebar, Hand tool, or Middle click)
+        if (tool === 'hand' || e.buttons === 4 || spacePressed || isReadOnly) {
+            setPanning({ startX: e.clientX, startY: e.clientY, panX: pan.x, panY: pan.y });
+            return;
+        }
+
+        // --- Prevent standard tools if read only
+        if (isReadOnly) return;
+
         // 1. Eraser Tool Logic
         if (tool === 'eraser') {
             const clickedEl = findTopElement(pt.x, pt.y);
@@ -126,12 +137,6 @@ export default function Canvas({
                 deleteElement(clickedEl.id);
                 return; // Stop event propagation
             }
-        }
-
-        // 2. Pan Tool Logic (Spacebar or Hand tool)
-        if (tool === 'hand' || e.buttons === 4 || spacePressed) {
-            setPanning({ startX: e.clientX, startY: e.clientY, panX: pan.x, panY: pan.y });
-            return;
         }
 
         // ── Text tool ──
@@ -206,6 +211,7 @@ export default function Canvas({
     // ─── POINTER MOVE ─────────────────────────────────────────
     function onPointerMove(e) {
         const pt = getSVGPoint(e);
+        if (onCursorMove) onCursorMove(pt.x, pt.y);
 
         // Panning
         if (panning) {

@@ -11,6 +11,13 @@ export function useCanvas(initialState, roomCode) {
     const [elements, setElements] = useState([]);
     const [selectedId, setSelectedId] = useState(null);
     const [title, setTitle] = useState('Untitled Canvas'); // Canvas Name
+    const [ownerName, setOwnerName] = useState(null); // Canvas Owner Name
+    const [roomPassword, setRoomPassword] = useState(null); // Room Password
+    const [requestStatus, setRequestStatus] = useState(null); // PENDING, REJECTED, ACCEPTED
+    const [nextAllowedRequestAt, setNextAllowedRequestAt] = useState(null); // Cooldown Date string
+    const [incomingRequests, setIncomingRequests] = useState([]); // Array of { requestId, userId, userName }
+    const [activeCursors, setActiveCursors] = useState({}); // Stores other users' cursors
+
     const [tool, setTool] = useState('select'); // select | hand | rect | diamond | circle | arrow | pencil | text | image | eraser
     const [strokeColor, setStrokeColor] = useState('#673AB7');
     const [fillColor, setFillColor] = useState('none');
@@ -51,6 +58,29 @@ export function useCanvas(initialState, roomCode) {
     useEffect(() => {
         elementsRef.current = elements;
     }, [elements]);
+
+    const cursorThrottleRef = useRef(0);
+    const userInfoRef = useRef(null);
+
+    useEffect(() => {
+        try {
+            const token = localStorage.getItem('token');
+            if (token) {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                userInfoRef.current = {
+                    userId: payload.userId,
+                    userName: payload.name || payload.email?.split('@')[0] || 'User'
+                };
+            } else {
+                userInfoRef.current = {
+                    userId: 'guest-' + Math.random().toString(36).substring(2, 8),
+                    userName: 'Guest'
+                };
+            }
+        } catch {
+            userInfoRef.current = { userId: 'unknown', userName: 'Unknown' };
+        }
+    }, []);
 
     // ─── Initialize or load canvas on mount ─────────────────────
     useEffect(() => {
@@ -105,6 +135,40 @@ export function useCanvas(initialState, roomCode) {
             });
         });
 
+        socket.on('edit-request', (data) => {
+            setIncomingRequests((prev) => [...prev, data]);
+        });
+
+        socket.on('cursor_update', (data) => {
+            const { userId, userName, cursorX, cursorY } = data;
+            // Ignore if it's somehow our own cursor
+            if (userInfoRef.current?.userId === userId) return;
+
+            setActiveCursors(prev => ({
+                ...prev,
+                [userId]: { userName, x: cursorX, y: cursorY, lastUpdate: Date.now() }
+            }));
+        });
+
+        socket.on('cursor_remove', (data) => {
+            const { userId } = data;
+            setActiveCursors(prev => {
+                const next = { ...prev };
+                delete next[userId];
+                return next;
+            });
+        });
+
+        socket.on('edit-request-resolved', (data) => {
+            const token = localStorage.getItem('token');
+            // Check if we are the target user by comparing token if possible,
+            // or we'll just reload. Re-checking token requires decoding JWT or an API call.
+            // For now, if we requested it and are waiting in view mode, reload to attempt edit mode.
+            if (data.action === 'ACCEPT' && token) {
+                window.location.search = '?mode=edit';
+            }
+        });
+
         const setupCanvas = async () => {
             if (roomCode) {
                 socket.emit('join-room', roomCode);
@@ -121,6 +185,8 @@ export function useCanvas(initialState, roomCode) {
                     // 1. Try to find existing canvas by room code
                     const data = await getCanvasByRoom(roomCode);
                     if (data?.success && data.canvas?._id) {
+                        if (data.canvas.owner) setOwnerName(data.canvas.owner);
+                        if (data.canvas.roomPassword) setRoomPassword(data.canvas.roomPassword);
                         canvasIdRef.current = data.canvas._id;
                         backendReady.current = true;
                         loadCanvasFromBackend(data.canvas._id);
@@ -180,6 +246,8 @@ export function useCanvas(initialState, roomCode) {
             const finalRoomCode = rCode || Math.random().toString(36).substring(2, 8).toUpperCase();
             const data = await createCanvas(name, finalRoomCode);
             if (data?.canvas?._id) {
+                if (data?.canvas?.owner) setOwnerName(data.canvas.owner);
+                if (data?.canvas?.roomPassword) setRoomPassword(data.canvas.roomPassword);
                 canvasIdRef.current = data.canvas._id;
                 localStorage.setItem('sc_canvasId', data.canvas._id);
                 backendReady.current = true;
@@ -195,8 +263,16 @@ export function useCanvas(initialState, roomCode) {
 
     async function loadCanvasFromBackend(cid) {
         try {
-            const data = await loadEvents(cid);
+            const searchParams = new URLSearchParams(window.location.search);
+            const urlMode = searchParams.get('mode');
+            const data = await loadEvents(cid, urlMode);
             if (data?.success) {
+                if (data.canvas?.owner) setOwnerName(data.canvas.owner);
+                if (data.canvas?.roomPassword) setRoomPassword(data.canvas.roomPassword);
+                if (data.canvas?.title) setTitle(data.canvas.title);
+                if (data.requestStatus) setRequestStatus(data.requestStatus);
+                if (data.nextAllowedRequestAt) setNextAllowedRequestAt(data.nextAllowedRequestAt);
+
                 let initialElements = [];
                 // 1. Load snapshot if available
                 if (data.snapshot) {
@@ -471,6 +547,17 @@ export function useCanvas(initialState, roomCode) {
             .catch(err => console.error("Failed to update thumbnail", err));
     };
 
+    function emitEditRequest(data) {
+        if (socketRef.current && roomCode) {
+            socketRef.current.emit('edit-request', { roomCode, ...data });
+        }
+    }
+
+    function resolveEditRequest(requestId, action, userId) {
+        if (socketRef.current && roomCode) {
+            socketRef.current.emit('edit-request-resolved', { roomCode, requestId, action, userId });
+        }
+    }
 
     // ─── Sync state with selection ──────────────────────────────
     useEffect(() => {
@@ -539,11 +626,35 @@ export function useCanvas(initialState, roomCode) {
         if (selectedId) updateElement(selectedId, { arrowEnd: val });
     };
 
+    const emitCursorMove = (x, y) => {
+        if (!socketRef.current || !roomCode || !userInfoRef.current) return;
+        const now = Date.now();
+        // Send cursor updates every 30ms (~33 updates/sec)
+        if (now - cursorThrottleRef.current > 30) {
+            cursorThrottleRef.current = now;
+            socketRef.current.emit("cursor_move", {
+                roomCode,
+                canvasId: canvasIdRef.current,
+                userId: userInfoRef.current.userId,
+                userName: userInfoRef.current.userName,
+                cursorX: x,
+                cursorY: y
+            });
+        }
+    };
+
     return {
         elements,
         selectedId,
         setSelectedId,
         title,
+        ownerName,
+        roomPassword,
+        setRoomPassword,
+        requestStatus,
+        setRequestStatus,
+        nextAllowedRequestAt,
+        setNextAllowedRequestAt,
         setTitle: setCanvasTitle,
         tool,
         setTool,
@@ -574,5 +685,11 @@ export function useCanvas(initialState, roomCode) {
         clearCanvas,
         canvasId: canvasIdRef.current,
         updateThumbnail,
+        incomingRequests,
+        setIncomingRequests,
+        emitEditRequest,
+        resolveEditRequest,
+        activeCursors,
+        emitCursorMove,
     };
 }

@@ -25,7 +25,19 @@ export async function createCanvas(title = 'Untitled Canvas', roomCode) {
  * GET /canvas/room/:roomCode — find canvas by room code
  */
 export async function getCanvasByRoom(roomCode) {
-    const res = await axios.get(`${BASE}/room/${roomCode}`);
+    const res = await axios.get(`${BASE}/room/${roomCode}`, {
+        headers: getAuthHeaders()
+    });
+    return res.data;
+}
+
+/**
+ * POST /canvas/join — validate room code and password
+ */
+export async function joinCanvasRoom(roomCode, password) {
+    const res = await axios.post(`${BASE}/join`, { roomCode, password }, {
+        headers: getAuthHeaders()
+    });
     return res.data;
 }
 
@@ -38,15 +50,15 @@ export async function saveEvent({ canvasId, eventType, eventData, eventOrder }) 
         eventType,
         eventData,
         eventOrder,
-    });
+    }, { headers: getAuthHeaders() });
     return res.data;
 }
 
 /**
  * GET /canvas/:canvasId/events — load all events for replay
  */
-export async function loadEvents(canvasId) {
-    const res = await axios.get(`${BASE}/${canvasId}/events`);
+export async function loadEvents(canvasId, mode) {
+    const res = await axios.get(`${BASE}/${canvasId}/events${mode ? `?mode=${mode}` : ''}`, { headers: getAuthHeaders() });
     return res.data;
 }
 /**
@@ -54,7 +66,7 @@ export async function loadEvents(canvasId) {
  */
 // ─── PUT /canvas/:id ─── update canvas metadata (title, thumbnail)
 export async function updateCanvasMetadata(canvasId, { title, thumbnail }) {
-    const res = await axios.put(`${BASE}/${canvasId}`, { title, thumbnail });
+    const res = await axios.put(`${BASE}/${canvasId}`, { title, thumbnail }, { headers: getAuthHeaders() });
     return res.data;
 }
 
@@ -64,7 +76,7 @@ export async function saveSnapshot(canvasId, elements, lastEventOrder) {
         canvasId,
         elements,
         lastEventOrder,
-    });
+    }, { headers: getAuthHeaders() });
     return res.data;
 }
 
@@ -88,5 +100,35 @@ export async function deleteCanvas(id) {
     return res.data;
 }
 
+/**
+ * DELETE /canvas/:id/leave — leave a shared canvas
+ */
+export async function leaveCanvas(id) {
+    const res = await axios.delete(`${BASE}/${id}/leave`, {
+        headers: getAuthHeaders()
+    });
+    return res.data;
+}
+
 // Alias for compatibility with User's MyCanvases.jsx
 export const fetchUserCanvases = getUserCanvases;
+
+export async function requestEditAccess(canvasId) {
+    const res = await axios.post(`${BASE}/request-edit`, { canvasId }, { headers: getAuthHeaders() });
+    return res.data;
+}
+
+export async function getEditRequests() {
+    const res = await axios.get(`${BASE}/requests`, { headers: getAuthHeaders() });
+    return res.data;
+}
+
+export async function approveEditRequest(requestId, action, expiresInHours = null) {
+    const res = await axios.post(`${BASE}/approve-edit`, { requestId, action, expiresInHours }, { headers: getAuthHeaders() });
+    return res.data;
+}
+
+export async function updateRoomPassword(canvasId, password) {
+    const res = await axios.post(`${BASE}/${canvasId}/password`, { password }, { headers: getAuthHeaders() });
+    return res.data;
+}

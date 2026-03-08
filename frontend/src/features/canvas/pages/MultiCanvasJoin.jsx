@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import AuthCard from "../../auth/components/AuthCard";
+import { joinCanvasRoom } from '../../../utils/api';
 import "../../../styles/auth.css";
 
 const MultiCanvasJoin = () => {
@@ -19,14 +20,8 @@ const MultiCanvasJoin = () => {
         e.preventDefault();
         setError("");
 
-        // TODO: Backend Verification Logic
-        // 1. Send POST request to /api/sessions/join with { sessionId, password }
-        // 2. If valid, backend returns session details and token
-        // 3. If invalid, set error message
-
         console.log("Verifying session credentials...", formData);
 
-        // Mock verification for UI demo
         if (formData.sessionId.length < 3) {
             setError("Invalid Session ID");
             return;
@@ -35,17 +30,23 @@ const MultiCanvasJoin = () => {
         // Normalize room code to uppercase
         const roomCode = formData.sessionId.trim().toUpperCase();
 
-        // Navigate to canvas on "success"
-        navigate(`/canvas/${roomCode}`, {
-            state: {
-                sessionConfig: {
-                    sessionName: `Session ${roomCode}`,
-                    isJoin: true,
-                    sessionId: roomCode,
-                    password: formData.password
+        try {
+            await joinCanvasRoom(roomCode, formData.password);
+
+            // Navigate to canvas on "success"
+            navigate(`/canvas/${roomCode}`, {
+                state: {
+                    sessionConfig: {
+                        sessionName: `Session ${roomCode}`,
+                        isJoin: true,
+                        sessionId: roomCode,
+                        password: formData.password
+                    }
                 }
-            }
-        });
+            });
+        } catch (err) {
+            setError(err.response?.data?.error || "Failed to join session");
+        }
     };
 
     return (

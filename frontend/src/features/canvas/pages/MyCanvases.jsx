@@ -1,13 +1,25 @@
 import React, { useEffect, useState } from "react";
 import Footer from "../../../components/Footer";
-import { fetchUserCanvases, createCanvas, deleteCanvas } from "../../../utils/api";
+import { fetchUserCanvases, createCanvas, deleteCanvas, leaveCanvas } from "../../../utils/api";
 import { useNavigate } from "react-router-dom";
-import { Trash2, ArrowLeft } from "lucide-react";
+import { Trash2, ArrowLeft, LogOut } from "lucide-react";
+
+const getUserIdFromToken = () => {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) return null;
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.userId;
+    } catch (error) {
+        return null;
+    }
+};
 
 const MyCanvases = () => {
     const [canvases, setCanvases] = useState([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+    const currentUserId = getUserIdFromToken();
 
     useEffect(() => {
         loadCanvases();
@@ -57,6 +69,21 @@ const MyCanvases = () => {
         }
     };
 
+    const handleLeave = async (e, id) => {
+        e.stopPropagation();
+        if (window.confirm("Are you sure you want to leave this shared canvas?")) {
+            try {
+                const res = await leaveCanvas(id);
+                if (res.success) {
+                    setCanvases(prev => prev.filter(c => c._id !== id));
+                }
+            } catch (error) {
+                console.error("Failed to leave canvas", error);
+                alert("Failed to leave canvas");
+            }
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[#b2a4ff] flex flex-col font-sans relative">
 
@@ -102,56 +129,69 @@ const MyCanvases = () => {
                             <span className="font-medium text-white">New Canvas</span>
                         </div>
 
-                        {canvases.map((canvas) => (
-                            <div
-                                key={canvas._id}
-                                onClick={() => handleOpenCanvas(canvas._id, canvas.roomCode)}
-                                className="bg-white rounded-2xl shadow-lg hover:shadow-2xl overflow-hidden cursor-pointer transition-all hover:-translate-y-1 block h-64 flex flex-col group relative"
-                            >
-                                {/* Preview Area */}
-                                <div className="h-40 bg-[#f0f4f8] flex items-center justify-center relative overflow-hidden">
-                                    {canvas.thumbnail ? (
-                                        <img
-                                            src={canvas.thumbnail}
-                                            alt={canvas.title}
-                                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                        />
-                                    ) : (
-                                        <>
-                                            <div className="absolute inset-0 bg-gradient-to-br from-[#b2a4ff]/20 to-[#1a103d]/5 opacity-50 group-hover:opacity-70 transition-opacity"></div>
-                                            <span className="text-4xl opacity-50 grayscale group-hover:grayscale-0 transition-all transform group-hover:scale-110 duration-500">
-                                                🖼️
-                                            </span>
-                                        </>
-                                    )}
-                                </div>
+                        {canvases.map((canvas) => {
+                            const isOwner = canvas.ownerId && (canvas.ownerId._id === currentUserId || canvas.ownerId === currentUserId);
+                            return (
+                                <div
+                                    key={canvas._id}
+                                    onClick={() => handleOpenCanvas(canvas._id, canvas.roomCode)}
+                                    className="bg-white rounded-2xl shadow-lg hover:shadow-2xl overflow-hidden cursor-pointer transition-all hover:-translate-y-1 block h-64 flex flex-col group relative"
+                                >
+                                    {/* Preview Area */}
+                                    <div className="h-40 bg-[#f0f4f8] flex items-center justify-center relative overflow-hidden">
+                                        {canvas.thumbnail ? (
+                                            <img
+                                                src={canvas.thumbnail}
+                                                alt={canvas.title}
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                            />
+                                        ) : (
+                                            <>
+                                                <div className="absolute inset-0 bg-gradient-to-br from-[#b2a4ff]/20 to-[#1a103d]/5 opacity-50 group-hover:opacity-70 transition-opacity"></div>
+                                                <span className="text-4xl opacity-50 grayscale group-hover:grayscale-0 transition-all transform group-hover:scale-110 duration-500">
+                                                    🖼️
+                                                </span>
+                                            </>
+                                        )}
+                                    </div>
 
-                                <div className="p-4 flex flex-col flex-grow justify-between bg-white">
-                                    <div className="flex justify-between items-start">
-                                        <div className="overflow-hidden">
-                                            <h3 className="font-semibold text-lg text-[#1a103d] truncate mb-1" title={canvas.title}>
-                                                {canvas.title || "Untitled Canvas"}
-                                            </h3>
-                                            <p className="text-xs text-gray-500">
-                                                Edited {new Date(canvas.updatedAt).toLocaleDateString()}
-                                            </p>
+                                    <div className="p-4 flex flex-col flex-grow justify-between bg-white">
+                                        <div className="flex justify-between items-start">
+                                            <div className="overflow-hidden">
+                                                <h3 className="font-semibold text-lg text-[#1a103d] truncate mb-1" title={canvas.title}>
+                                                    {canvas.title || "Untitled Canvas"}
+                                                </h3>
+                                                <p className="text-xs text-gray-500">
+                                                    Edited {new Date(canvas.updatedAt).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-between items-center mt-4">
+                                            <span className={`text-xs px-2 py-1 ${isOwner ? 'bg-[#b2a4ff]/20 text-[#1a103d]' : 'bg-green-100 text-green-800'} rounded-full font-medium`}>
+                                                {isOwner ? 'Private' : `Shared by ${canvas.ownerId?.name || 'Unknown'}`}
+                                            </span>
+                                            {isOwner ? (
+                                                <button
+                                                    onClick={(e) => handleDelete(e, canvas._id)}
+                                                    className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                                                    title="Delete Canvas"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={(e) => handleLeave(e, canvas._id)}
+                                                    className="p-2 text-orange-400 hover:text-orange-600 hover:bg-orange-50 rounded-full transition-colors"
+                                                    title="Leave Canvas"
+                                                >
+                                                    <LogOut className="w-4 h-4" />
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
-                                    <div className="flex justify-between items-center mt-4">
-                                        <span className="text-xs px-2 py-1 bg-[#b2a4ff]/20 text-[#1a103d] rounded-full font-medium">
-                                            Private
-                                        </span>
-                                        <button
-                                            onClick={(e) => handleDelete(e, canvas._id)}
-                                            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
-                                            title="Delete Canvas"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            )
+                        })}
                     </div>
                 )}
             </main>
