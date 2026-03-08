@@ -18,7 +18,7 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "http://127.0.0.1:5000/auth/google/callback",
+      callbackURL: process.env.GOOGLE_CALLBACK_URL, // FIXED
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
@@ -50,7 +50,7 @@ passport.use(
     {
       clientID: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
-      callbackURL: "http://127.0.0.1:5000/auth/github/callback",
+      callbackURL: process.env.GITHUB_CALLBACK_URL, // FIXED
       scope: ["user:email"],
     },
     async (accessToken, refreshToken, profile, done) => {
@@ -83,7 +83,7 @@ passport.use(
   )
 );
 
-// Serialize/Deserialize user (Not strictly needed for stateless JWT but good for Passport internals if session used)
+// Serialize / Deserialize
 passport.serializeUser((user, done) => {
   done(null, user.id);
 });
