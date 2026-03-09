@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const BASE = 'http://localhost:5000/api/canvas';
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const BASE = `${API_BASE_URL}/api/canvas`;
 
 // Helper to get auth header
 const getAuthHeaders = () => {

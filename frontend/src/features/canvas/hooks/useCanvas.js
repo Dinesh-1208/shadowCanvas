@@ -85,7 +85,8 @@ export function useCanvas(initialState, roomCode) {
     // ─── Initialize or load canvas on mount ─────────────────────
     useEffect(() => {
         // Init Socket.io
-        const socket = io('http://localhost:5000', {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const socket = io(API_URL, {
             withCredentials: true,
         });
         socketRef.current = socket;

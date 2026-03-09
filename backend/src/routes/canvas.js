@@ -626,6 +626,7 @@ router.post('/approve-edit', protect, async (req, res) => {
                 access.expiresAt = expiresAt;
             }
             await access.save();
+            await request.save();
         } else {
             request.status = 'REJECTED';
             request.nextAllowedRequestAt = new Date(Date.now() + 5 * 60 * 1000);
