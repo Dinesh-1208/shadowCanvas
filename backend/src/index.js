@@ -39,7 +39,7 @@ mongoose
   .connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/shadowCanvas", {
     // useNewUrlParser and useUnifiedTopology are no longer needed in Mongoose 6+ but harmless if included, omitting for cleanliness
   })
-  .then(() => console.log("MongoDB connected"))
+  .then(() => console.log("Connected to MongoDB"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // Routes
@@ -61,7 +61,7 @@ initSocket(httpServer);
 
 if (process.env.NODE_ENV !== 'test') {
   httpServer.listen(PORT, () => {
-    console.log(`Backend running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
   });
 }
 
