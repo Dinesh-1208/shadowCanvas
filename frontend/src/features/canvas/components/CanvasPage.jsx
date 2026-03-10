@@ -171,7 +171,10 @@ export default function CanvasPage() {
                     reorderElement={canvas.reorderElement}
                     onThumbnailUpdate={canvas.updateThumbnail}
                     isReadOnly={isViewMode}
-                    onCursorMove={canvas.emitCursorMove}
+                    onCursorMove={(x, y) => {
+                        const role = isViewMode ? 'VIEW' : 'EDIT';
+                        canvas.emitCursorMove(x, y, role);
+                    }}
                 />
             </div>
 

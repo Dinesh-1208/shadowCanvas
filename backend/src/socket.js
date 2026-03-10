@@ -44,7 +44,12 @@ export const initSocket = (server) => {
         });
 
         socket.on("cursor_move", (data) => {
-            const { roomCode, canvasId, userId, userName, cursorX, cursorY } = data;
+            const { roomCode, canvasId, userId, userName, cursorX, cursorY, role } = data;
+
+            if (role === 'VIEW') {
+                return;
+            }
+
             if (roomCode) {
                 const normalizedRoom = roomCode.toUpperCase();
                 socket.data = socket.data || {};
