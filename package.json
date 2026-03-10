@@ -1,0 +1,9 @@
+{
+  "name": "shadowcanvas-root",
+  "version": "1.0.0",
+  "description": "Root workspace for ShadowCanvas to manage full-stack commands.",
+  "private": true,
+  "scripts": {
+    "test:regression": "npm --prefix backend run test:regression && npm --prefix frontend run test:regression"
+  }
+}

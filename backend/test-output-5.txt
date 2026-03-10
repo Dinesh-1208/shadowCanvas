@@ -1,0 +1,605 @@
+﻿
+> backend@1.0.0 test
+> cross-env NODE_ENV=test MONGO_URI=mongodb://127.0.0.1:27017/shadowCanvas_test NODE_OPTIONS=--experimental-vm-modules jest
+
+node.exe : 
+(node:15836) 
+ExperimentalWarning: 
+VM Modules is an 
+experimental feature 
+and might change at 
+any time
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: ((node:15836)    
+ Ex...nge at any ti    
+me:String) [], Rem    
+oteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+(Use `node 
+--trace-warnings ...` 
+to show where the 
+warning was created)
+(node:28176) 
+ExperimentalWarning: 
+VM Modules is an 
+experimental feature 
+and might change at 
+any time
+(Use `node 
+--trace-warnings ...` 
+to show where the 
+warning was created)
+PASS 
+tests/canvas.test.js
+  ΓùÅ Console
+
+    console.log
+      [dotenv@17.2.4] 
+injecting env (7) from 
+.env -- tip: ΓÜÖ∩╕Å  
+suppress all logs with 
+{ quiet: true }
+
+      at _log (node_mod
+ules/dotenv/lib/main.js
+:142:11)
+
+    console.log
+      [dotenv@17.2.4] 
+injecting env (0) from 
+.env -- tip: ΓÜÖ∩╕Å  
+enable debug logging 
+with { debug: true }
+
+      at _log (node_mod
+ules/dotenv/lib/main.js
+:142:11)
+
+    console.log
+      [dotenv@17.2.4] 
+injecting env (0) from 
+.env -- tip: ΓÜÖ∩╕Å  
+write to custom object 
+with { processEnv: 
+myObject }
+
+      at _log (node_mod
+ules/dotenv/lib/main.js
+:142:11)
+
+    console.log
+      [dotenv@17.2.4] 
+injecting env (0) from 
+.env -- tip: ≡ƒöæ add 
+access controls to 
+secrets: 
+https://dotenvx.com/ops
+
+      at _log (node_mod
+ules/dotenv/lib/main.js
+:142:11)
+
+    console.log
+      [dotenv@17.2.4] 
+injecting env (0) from 
+.env -- tip: ΓÜÖ∩╕Å  
+load multiple .env 
+files with { path: 
+['.env.local', '.env'] 
+}
+
+      at _log (node_mod
+ules/dotenv/lib/main.js
+:142:11)
+
+    console.log
+      Connected to 
+MongoDB
+
+      at 
+src/index.js:43:23
+
+    console.log
+      [Request] POST 
+/auth/register
+
+      at 
+src/index.js:34:11
+
+    console.log
+      [Request] POST 
+/api/canvas/create
+
+      at 
+src/index.js:34:11
+
+    console.log
+      [Request] POST 
+/api/canvas/create
+
+      at 
+src/index.js:34:11
+
+    console.log
+      [Request] GET /ap
+i/canvas/user-canvases
+
+      at 
+src/index.js:34:11
+
+    console.log
+      [GET 
+/user-canvases] Found 
+1 canvases
+
+      at src/routes/can
+vas.js:108:17
+
+    console.log
+       - Canvas 69b061b
+25c92d89a899c0c77: 
+Test Canvas, Thumbnail 
+length: 0
+
+      at src/routes/can
+vas.js:109:39
+          at 
+Array.forEach 
+(<anonymous>)
+
+    console.log
+      [Request] GET /ap
+i/canvas/user-canvases
+
+      at 
+src/index.js:34:11
+
+    console.log
+      [Request] POST 
+/api/canvas/snapshot
+
+      at 
+src/index.js:34:11
+
+    console.log
+      [Request] GET /ap
+i/canvas/room/TESTROOM
+
+      at 
+src/index.js:34:11
+
+    console.log
+      [Request] DELETE 
+/api/canvas/69b061b25c9
+2d89a899c0c77
+
+      at 
+src/index.js:34:11
+
+FAIL tests/auth.test.js
+  ΓùÅ Console
+
+    console.log
+      [dotenv@17.2.4] 
+injecting env (7) from 
+.env -- tip: ≡ƒæÑ sync 
+secrets across 
+teammates & machines: 
+https://dotenvx.com/ops
+
+      at _log (node_mod
+ules/dotenv/lib/main.js
+:142:11)
+
+    console.log
+      [dotenv@17.2.4] 
+injecting env (0) from 
+.env -- tip: ≡ƒùé∩╕Å 
+backup and recover 
+secrets: 
+https://dotenvx.com/ops
+
+      at _log (node_mod
+ules/dotenv/lib/main.js
+:142:11)
+
+    console.log
+      [dotenv@17.2.4] 
+injecting env (0) from 
+.env -- tip: ≡ƒùé∩╕Å 
+backup and recover 
+secrets: 
+https://dotenvx.com/ops
+
+      at _log (node_mod
+ules/dotenv/lib/main.js
+:142:11)
+
+    console.log
+      [dotenv@17.2.4] 
+injecting env (0) from 
+.env -- tip: ΓÜÖ∩╕Å  
+override existing env 
+vars with { override: 
+true }
+
+      at _log (node_mod
+ules/dotenv/lib/main.js
+:142:11)
+
+    console.log
+      [dotenv@17.2.4] 
+injecting env (0) from 
+.env -- tip: ΓÜÖ∩╕Å  
+enable debug logging 
+with { debug: true }
+
+      at _log (node_mod
+ules/dotenv/lib/main.js
+:142:11)
+
+    console.log
+      [dotenv@17.2.4] 
+injecting env (0) from 
+.env -- tip: ΓÜÖ∩╕Å  
+enable debug logging 
+with { debug: true }
+
+      at _log (node_mod
+ules/dotenv/lib/main.js
+:142:11)
+
+    console.log
+      Connected to 
+MongoDB
+
+      at 
+src/index.js:43:23
+
+    console.log
+      [Request] POST 
+/auth/register
+
+      at 
+src/index.js:34:11
+
+    console.log
+      [Request] POST 
+/auth/register
+
+      at 
+src/index.js:34:11
+
+    console.log
+      [Request] POST 
+/auth/login
+
+      at 
+src/index.js:34:11
+
+    console.log
+      [Request] POST 
+/auth/login
+
+      at 
+src/index.js:34:11
+
+    console.log
+      [Request] POST 
+/auth/login
+
+      at 
+src/index.js:34:11
+
+    console.log
+      [Request] GET 
+/auth/me
+
+      at 
+src/index.js:34:11
+
+    console.error
+      
+JsonWebTokenError {
+        name: 
+'JsonWebTokenError',
+        message: 'jwt 
+malformed'
+      }
+
+    [0m [90m 24 
+|[39m             
+next()[33m;[39m
+     [90m 25 |[39m   
+      } 
+[36mcatch[39m 
+(error) {
+    [31m[1m>[22m[39
+m[90m 26 |[39m       
+      console[33m.[39
+merror(error)[33m;[39
+m
+     [90m    |[39m   
+                  
+[31m[1m^[22m[39m
+     [90m 27 |[39m   
+          res[33m.[39
+mstatus([35m401[39m)
+[33m.[39mjson({ 
+message[33m:[39m 
+[32m'Not authorized, 
+token failed'[39m 
+})[33m;[39m
+     [90m 28 |[39m   
+      }
+     [90m 29 |[39m   
+  }[0m
+
+      at protect (src/m
+iddleware/auth.middlewa
+re.js:26:21)
+      at 
+Layer.handleRequest (no
+de_modules/router/lib/l
+ayer.js:152:17)
+      at next (node_mod
+ules/router/lib/route.j
+s:157:13)
+      at 
+Route.dispatch (node_mo
+dules/router/lib/route.
+js:117:3)
+      at handle (node_m
+odules/router/index.js:
+435:11)
+      at 
+Layer.handleRequest (no
+de_modules/router/lib/l
+ayer.js:152:17)
+      at node_modules/r
+outer/index.js:295:15
+      at processParams 
+(node_modules/router/in
+dex.js:582:12)
+      at next (node_mod
+ules/router/index.js:29
+1:5)
+      at router.handle 
+(node_modules/router/in
+dex.js:186:3)
+      at router (node_m
+odules/router/index.js:
+60:12)
+      at 
+Layer.handleRequest (no
+de_modules/router/lib/l
+ayer.js:152:17)
+      at trimPrefix (no
+de_modules/router/index
+.js:342:13)
+      at node_modules/r
+outer/index.js:297:9
+      at processParams 
+(node_modules/router/in
+dex.js:582:12)
+      at next (node_mod
+ules/router/index.js:29
+1:5)
+      at 
+src/index.js:35:3
+      at 
+Layer.handleRequest (no
+de_modules/router/lib/l
+ayer.js:152:17)
+      at trimPrefix (no
+de_modules/router/index
+.js:342:13)
+      at node_modules/r
+outer/index.js:297:9
+      at processParams 
+(node_modules/router/in
+dex.js:582:12)
+      at next (node_mod
+ules/router/index.js:29
+1:5)
+      at initialize (no
+de_modules/passport/lib
+/middleware/initialize.
+js:98:5)
+      at 
+Layer.handleRequest (no
+de_modules/router/lib/l
+ayer.js:152:17)
+      at trimPrefix (no
+de_modules/router/index
+.js:342:13)
+      at node_modules/r
+outer/index.js:297:9
+      at processParams 
+(node_modules/router/in
+dex.js:582:12)
+      at next (node_mod
+ules/router/index.js:29
+1:5)
+      at cors (node_mod
+ules/cors/lib/index.js:
+188:7)
+      at node_modules/c
+ors/lib/index.js:224:17
+      at 
+originCallback (node_mo
+dules/cors/lib/index.js
+:214:15)
+      at node_modules/c
+ors/lib/index.js:219:13
+      at 
+optionsCallback (node_m
+odules/cors/lib/index.j
+s:199:9)
+      at 
+corsMiddleware (node_mo
+dules/cors/lib/index.js
+:204:7)
+      at 
+Layer.handleRequest (no
+de_modules/router/lib/l
+ayer.js:152:17)
+      at trimPrefix (no
+de_modules/router/index
+.js:342:13)
+      at node_modules/r
+outer/index.js:297:9
+      at processParams 
+(node_modules/router/in
+dex.js:582:12)
+      at next (node_mod
+ules/router/index.js:29
+1:5)
+      at read (node_mod
+ules/body-parser/lib/re
+ad.js:53:5)
+      at jsonParser (no
+de_modules/body-parser/
+lib/types/json.js:88:5)
+      at 
+Layer.handleRequest (no
+de_modules/router/lib/l
+ayer.js:152:17)
+      at trimPrefix (no
+de_modules/router/index
+.js:342:13)
+      at node_modules/r
+outer/index.js:297:9
+      at processParams 
+(node_modules/router/in
+dex.js:582:12)
+      at next (node_mod
+ules/router/index.js:29
+1:5)
+      at router.handle 
+(node_modules/router/in
+dex.js:186:3)
+      at app.handle (no
+de_modules/express/lib/
+application.js:177:15)
+      at Server.app (no
+de_modules/express/lib/
+express.js:38:9)
+
+    console.log
+      [Request] GET 
+/auth/me
+
+      at 
+src/index.js:34:11
+
+  ΓùÅ Auth API 
+Integration Tests ΓÇ║ 
+should not login with 
+invalid credentials
+
+    expect(received).to
+Equal(expected) // 
+deep equality
+
+    Expected: 401
+    Received: 404
+
+    [0m [90m 66 
+|[39m             
+})[33m;[39m
+     [90m 67 |[39m   
+      
+    [31m[1m>[22m[39
+m[90m 68 |[39m       
+  expect(res[33m.[39m
+statusCode)[33m.[39mt
+oEqual([35m401[39m)[
+33m;[39m
+     [90m    |[39m   
+                       
+      
+[31m[1m^[22m[39m
+     [90m 69 |[39m   
+      expect(res[33m.
+[39mbody)[33m.[39mtoH
+aveProperty([32m'messa
+ge'[39m)[33m;[39m
+     [90m 70 |[39m   
+  })[33m;[39m
+     [90m 71 
+|[39m[0m
+
+      at 
+Object.<anonymous> (tes
+ts/auth.test.js:68:32)
+
+  ΓùÅ Auth API 
+Integration Tests ΓÇ║ 
+should get current 
+user profile with 
+valid token
+
+    expect(received).to
+Equal(expected) // 
+deep equality
+
+    Expected: 200
+    Received: 401
+
+    [0m [90m 84 
+|[39m             [33
+m.[39m[36mset[39m([
+32m'Authorization'[39m
+[33m,[39m 
+[32m`Bearer ${token}`
+[39m)[33m;[39m
+     [90m 85 |[39m   
+      
+    [31m[1m>[22m[39
+m[90m 86 |[39m       
+  expect(profileRes[33
+m.[39mstatusCode)[33m
+.[39mtoEqual([35m200
+[39m)[33m;[39m
+     [90m    |[39m   
+                       
+             
+[31m[1m^[22m[39m
+     [90m 87 |[39m   
+      expect(profileRes
+[33m.[39mbody)[33m.
+[39mtoHaveProperty([32
+m'email'[39m[33m,[39
+m testUser[33m.[39mem
+ail)[33m;[39m
+     [90m 88 |[39m   
+  })[33m;[39m
+     [90m 89 
+|[39m[0m
+
+      at 
+Object.<anonymous> (tes
+ts/auth.test.js:86:39)
+
+Test Suites: 1 failed, 
+1 passed, 2 total
+Tests:       2 failed, 
+11 passed, 13 total
+Snapshots:   0 total
+Time:        9.41 s
+Ran all test suites.
