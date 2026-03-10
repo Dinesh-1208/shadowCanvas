@@ -8,6 +8,8 @@ import ShareModal from './ShareModal';
 import LiveCursors from './LiveCursors';
 import { requestEditAccess, approveEditRequest } from '../../../utils/api';
 import { useNavigate } from 'react-router-dom';
+import AIChatPanel from './AIChatPanel';
+import { Sparkles } from 'lucide-react';
 
 // import '../styles/global.css'; // Imported in index.js usually, but ensuring it's loaded
 
@@ -41,6 +43,7 @@ export default function CanvasPage() {
     const [isShareModalOpen, setIsShareModalOpen] = React.useState(false);
     const [isRequestingLocal, setIsRequestingLocal] = React.useState(false);
     const [cooldownTime, setCooldownTime] = React.useState(null);
+    const [isAIChatOpen, setIsAIChatOpen] = React.useState(false);
 
     // For custom expiry per request
     const [customExpiryMode, setCustomExpiryMode] = React.useState({});
@@ -279,6 +282,13 @@ export default function CanvasPage() {
                                 <span className="hidden sm:inline text-sm">Share</span>
                             </button>
                         )}
+                        <button
+                            onClick={() => setIsAIChatOpen(!isAIChatOpen)}
+                            className={`h-10 px-3 sm:px-4 text-white rounded-xl font-semibold shadow-lg transition-all flex items-center gap-2 shrink-0 ${isAIChatOpen ? 'bg-[#9d8beb] shadow-inner' : 'bg-[#b2a4ff] hover:bg-[#9d8beb] hover:-translate-y-0.5'}`}
+                        >
+                            <Sparkles className="w-4 h-4" />
+                            <span className="hidden sm:inline text-sm">AI Chat</span>
+                        </button>
                     </div>
                 </div>
 
@@ -413,6 +423,16 @@ export default function CanvasPage() {
                         ))}
                     </div>
                 )}
+
+                {/* AI Chat Panel */}
+                <AIChatPanel
+                    isOpen={isAIChatOpen}
+                    onClose={() => setIsAIChatOpen(false)}
+                    addAiElements={canvas.addAiElements}
+                    pan={canvas.pan}
+                    zoom={canvas.zoom}
+                    existingElements={canvas.elements}
+                />
 
                 {/* Main Menu / Properties Panel Slide-out */}
                 {(!isViewMode && isMenuOpen) && (
