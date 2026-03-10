@@ -35,20 +35,25 @@ The user will describe a diagram. Your ONLY task is to return a VALID JSON objec
 The JSON must follow this exact schema:
 {
   "elements": [
-    { "type": "rectangle", "x": 100, "y": 100, "width": 120, "height": 60, "text": "Label" },
-    { "type": "circle",    "x": 350, "y": 100, "radius": 40,              "text": "Label" },
-    { "type": "line",      "x1": 220, "y1": 130, "x2": 310, "y2": 130 },
-    { "type": "text",      "x": 120,  "y": 200,  "text": "Any label" }
+    { "type": "rectangle", "x": 100, "y": 100, "width": 120, "height": 60, "text": "Server" },
+    { "type": "circle",    "x": 400, "y": 100, "radius": 40, "text": "Database" },
+    { "type": "text",      "x": 120, "y": 220, "text": "Any standalone label" }
+  ],
+  "connections": [
+    { "from": "Server", "to": "Database", "label": "optional arrow label" }
   ]
 }
 
 Rules:
 - All coordinates must be numbers (not strings).
-- "text" is optional on shapes; omit it if not needed.
-- Only use types: rectangle, circle, line, text.
+- "text" on shapes is required so connections can reference elements by name.
+- Only use types: rectangle, circle, text in "elements". Do NOT put lines in elements — use "connections" instead.
+- "connections" is an array of relationships between named shapes. Use the same text as the shape labels.
+- "label" on a connection is optional.
 - Do NOT include any markdown, backticks, or prose — ONLY the raw JSON object.
 - Lay shapes out thoughtfully so they don't overlap and the diagram is readable.
-- Use a 800x600 coordinate space.`;
+- Use a 800x600 coordinate space.
+- Always include a "connections" array (it can be empty [] if there are no relationships).`;
 
         const finalPrompt = `Create a diagram for: ${prompt}`;
 
@@ -75,7 +80,7 @@ Rules:
             return res.status(422).json({
                 success: false,
                 error: 'AI returned an invalid response. Please try rephrasing your prompt.',
-                raw  // send raw for debugging purposes
+                raw
             });
         }
 
@@ -87,16 +92,22 @@ Rules:
         }
 
         // Sanitise elements — filter out any entries missing required fields
-        const VALID_TYPES = new Set(['rectangle', 'circle', 'line', 'text']);
+        const VALID_TYPES = new Set(['rectangle', 'circle', 'text']);
         const elements = parsed.elements.filter(el => el && VALID_TYPES.has(el.type));
 
-        res.status(200).json({ success: true, elements });
+        // Pass connections through (default to empty array if missing)
+        const connections = Array.isArray(parsed.connections)
+            ? parsed.connections.filter(c => c && typeof c.from === 'string' && typeof c.to === 'string')
+            : [];
+
+        res.status(200).json({ success: true, elements, connections });
         
     } catch (err) {
         console.error('[Gemini Generation Error]', err);
         res.status(500).json({ success: false, error: 'Failed to generate diagram from AI' });
     }
 });
+
 
 
 // ─── POST /canvas/create ─── Create a new canvas (metadata only)

@@ -120,39 +120,42 @@ export default function AIChatPanel({ isOpen, onClose, addAiElements }) {
             const response = await generateDiagram(promptText);
             
             if (response.success && response.elements) {
-                // Show a readable summary of what Gemini returned
+                // Build a concise summary for the chat
+                const connections = response.connections || [];
                 const summary = response.elements
                     .map(el => {
-                        if (el.type === 'rectangle') return `▭ Rectangle${el.text ? ` "${el.text}"` : ''}`;
-                        if (el.type === 'circle')    return `◎ Circle${el.text ? ` "${el.text}"` : ''}`;
-                        if (el.type === 'line')      return `— Line`;
+                        if (el.type === 'rectangle') return `\u25ad Rectangle${el.text ? ` "${el.text}"` : ''}`;
+                        if (el.type === 'circle')    return `\u25ce Circle${el.text ? ` "${el.text}"` : ''}`;
                         if (el.type === 'text')      return `T "${el.text || ''}"`;
                         return el.type;
                     })
+                    .concat(
+                        connections.map(c => `\u2192 ${c.from} \u2014 ${c.to}${c.label ? ` (${c.label})` : ''}`)
+                    )
                     .join('\n');
 
                 setMessages(prev => [...prev, {
                     id: Date.now() + 1,
                     role: 'assistant',
-                    content: `🎨 Generated diagram with ${response.elements.length} element(s):\n${summary}`
+                    content: `\uD83C\uDFA8 Generated diagram with ${response.elements.length} shape(s) and ${connections.length} connection(s):\n${summary}`
                 }]);
 
-                // Parse JSON elements into canvas drawing objects and add to canvas
+                // Parse JSON elements + connections into canvas objects
                 if (typeof addAiElements === 'function') {
-                    const canvasElements = parseSvgToCanvasElements(response.elements);
+                    const canvasElements = parseSvgToCanvasElements(response.elements, connections);
                     
                     if (canvasElements.length > 0) {
                         addAiElements(canvasElements);
                         setMessages(prev => [...prev, {
                             id: Date.now() + 2,
                             role: 'assistant',
-                            content: `✅ Diagram added to canvas. (${canvasElements.length} shape${canvasElements.length > 1 ? 's' : ''} placed) You can drag, resize, or delete them like any other element.`
+                            content: `\u2705 Diagram added to canvas. (${canvasElements.length} shape${canvasElements.length > 1 ? 's' : ''} placed) You can drag, resize, or delete them like any other element.`
                         }]);
                     } else {
                         setMessages(prev => [...prev, {
                             id: Date.now() + 2,
                             role: 'assistant',
-                            content: '⚠️ The diagram was generated but no renderable shapes were found. Try rephrasing your prompt.'
+                            content: '\u26A0\uFE0F The diagram was generated but no renderable shapes were found. Try rephrasing your prompt.'
                         }]);
                     }
                 }
