@@ -193,21 +193,68 @@ export default function AIChatPanel({ isOpen, onClose, addAiElements }) {
             </div>
 
             {/* Chat History */}
-            <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-4 bg-gray-50/50">
-                {messages.map(msg => (
-                    <div 
-                        key={msg.id} 
-                        className={`flex flex-col max-w-[85%] ${msg.role === 'user' ? 'self-end' : 'self-start'}`}
-                    >
-                        <div className={`p-3 rounded-2xl text-[13px] leading-relaxed shadow-sm overflow-x-auto ${
-                            msg.role === 'user' 
-                            ? 'bg-[#1a103d] text-white rounded-tr-sm' 
-                            : 'bg-white border border-gray-100 text-gray-700 rounded-tl-sm font-mono whitespace-pre text-xs'
-                        }`}>
-                            {msg.content}
+            <div className="flex-1 p-3 overflow-y-auto overflow-x-hidden flex flex-col gap-3 bg-gray-50/50">
+                {messages.map(msg => {
+                    const isUser = msg.role === 'user';
+
+                    // Heuristic: treat content starting with { or < as a code block
+                    const isCode = !isUser &&
+                        (msg.content.trimStart().startsWith('{') ||
+                         msg.content.trimStart().startsWith('<'));
+
+                    return (
+                        <div
+                            key={msg.id}
+                            className={`flex flex-col w-[75%] ${
+                                isUser ? 'self-end items-end' : 'self-start items-start'
+                            }`}
+                        >
+                            <div
+                                className={`w-full rounded-2xl text-[13px] leading-relaxed shadow-sm ${
+                                    isUser
+                                        ? 'bg-[#1a103d] text-white rounded-tr-sm px-3 py-2.5'
+                                        : 'bg-white border border-gray-100 text-gray-700 rounded-tl-sm'
+                                }`}
+                            >
+                                {isCode ? (
+                                    /* Sandboxed code block — only scrolls vertically inside itself */
+                                    <pre
+                                        style={{
+                                            margin: 0,
+                                            padding: '10px 12px',
+                                            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                                            fontSize: '11px',
+                                            lineHeight: '1.5',
+                                            whiteSpace: 'pre-wrap',
+                                            wordBreak: 'break-word',
+                                            overflowWrap: 'break-word',
+                                            overflowX: 'hidden',
+                                            overflowY: 'auto',
+                                            maxHeight: '200px',
+                                            backgroundColor: '#f8f7ff',
+                                            borderRadius: '12px',
+                                        }}
+                                    >
+                                        {msg.content}
+                                    </pre>
+                                ) : (
+                                    /* Normal chat text — wraps cleanly */
+                                    <p
+                                        style={{
+                                            margin: 0,
+                                            padding: isUser ? 0 : '10px 12px',
+                                            whiteSpace: 'pre-wrap',
+                                            wordBreak: 'break-word',
+                                            overflowWrap: 'break-word',
+                                        }}
+                                    >
+                                        {msg.content}
+                                    </p>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
                 
                 {isThinking && (
                     <div className="flex flex-col self-start max-w-[85%]">
