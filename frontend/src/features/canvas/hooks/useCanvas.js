@@ -18,6 +18,12 @@ export function useCanvas(initialState, roomCode) {
     const [nextAllowedRequestAt, setNextAllowedRequestAt] = useState(null); // Cooldown Date string
     const [incomingRequests, setIncomingRequests] = useState([]); // Array of { requestId, userId, userName }
     const [activeCursors, setActiveCursors] = useState({}); // Stores other users' cursors
+    const [activeUsers, setActiveUsers] = useState([]); // List of users currently in room
+
+    const userColorRef = useRef(null);
+    const userInfoRef = useRef(null);
+
+
 
     const [tool, setTool] = useState('select'); // select | hand | rect | diamond | circle | arrow | pencil | text | image | eraser
     const [strokeColor, setStrokeColor] = useState('#673AB7');
@@ -65,7 +71,7 @@ export function useCanvas(initialState, roomCode) {
     const cursorRaf = useRef(null);
     const idleTimerRef = useRef(null);
 
-    const userInfoRef = useRef(null);
+
 
     useEffect(() => {
         try {
@@ -85,6 +91,20 @@ export function useCanvas(initialState, roomCode) {
         } catch {
             userInfoRef.current = { userId: 'unknown', userName: 'Unknown' };
         }
+
+        // Apply deterministic color here as well to ensure it's set after auth resolves
+        if (userInfoRef.current?.userId && userInfoRef.current.userId !== 'unknown') {
+            const palette = ['#f87171', '#fb923c', '#fbbf24', '#a3e635', '#4ade80', '#2dd4bf', '#38bdf8', '#818cf8', '#c084fc', '#f472b6'];
+            let hash = 0;
+            const str = userInfoRef.current.userId;
+            for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            hash = Math.abs(hash);
+            userColorRef.current = palette[hash % palette.length];
+        } else if (!userColorRef.current) {
+            userColorRef.current = '#818cf8';
+        }
     }, []);
 
     // ─── Initialize or load canvas on mount ─────────────────────
@@ -98,7 +118,17 @@ export function useCanvas(initialState, roomCode) {
 
         if (roomCode) {
             socket.emit('join-room', roomCode);
+            socket.emit('user_joined_canvas', {
+                roomCode,
+                userId: userInfoRef.current?.userId,
+                userName: userInfoRef.current?.userName,
+                color: userColorRef.current
+            });
         }
+
+        socket.on('canvas_users_update', (users) => {
+            setActiveUsers(users);
+        });
 
         socket.on('canvas-update', (data) => {
             const { eventType, eventData } = data;
@@ -746,6 +776,7 @@ export function useCanvas(initialState, roomCode) {
         emitEditRequest,
         resolveEditRequest,
         activeCursors,
+        activeUsers,
         emitCursorMove,
     };
 }
