@@ -627,8 +627,11 @@ export function useCanvas(initialState, roomCode) {
         if (selectedId) updateElement(selectedId, { arrowEnd: val });
     };
 
-    const emitCursorMove = (x, y) => {
+    const emitCursorMove = (x, y, role = 'EDIT') => {
         if (!socketRef.current || !roomCode || !userInfoRef.current) return;
+
+        if (role === 'VIEW') return;
+
         const now = Date.now();
         // Send cursor updates every 30ms (~33 updates/sec)
         if (now - cursorThrottleRef.current > 30) {
@@ -639,7 +642,8 @@ export function useCanvas(initialState, roomCode) {
                 userId: userInfoRef.current.userId,
                 userName: userInfoRef.current.userName,
                 cursorX: x,
-                cursorY: y
+                cursorY: y,
+                role
             });
         }
     };
