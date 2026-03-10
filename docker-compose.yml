@@ -1,5 +1,4 @@
 version: '3.8'
-
 services:
   backend:
     image: himaneeshj/shadowcanvas-backend
@@ -8,21 +7,20 @@ services:
     ports:
       - "5000:5000"
     restart: unless-stopped
-
   frontend:
     image: himaneeshj/shadowcanvas-frontend
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     restart: unless-stopped
-
   prometheus:
     image: prom/prometheus
     ports:
       - "9090:9090"
     restart: unless-stopped
-
   grafana:
     image: grafana/grafana
     ports:
       - "3000:3000"
-    restart: unless-stopped
