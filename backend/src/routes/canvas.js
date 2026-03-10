@@ -9,8 +9,62 @@ import EditRequest from '../models/EditRequest.model.js';
 import { protect } from '../middleware/auth.middleware.js'; // Import auth middleware
 import jwt from 'jsonwebtoken';
 import User from '../models/User.model.js';
+import { GoogleGenAI } from '@google/genai';
 
 const router = express.Router();
+
+// Initialize Gemini Client
+const ai = process.env.GEMINI_API_KEY ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }) : null;
+
+// ─── POST /canvas/generate-diagram ─── Generate an SVG from a prompt via Gemini
+router.post('/generate-diagram', async (req, res) => {
+    try {
+        const { prompt } = req.body;
+        
+        if (!prompt) {
+            return res.status(400).json({ success: false, error: 'Prompt is required' });
+        }
+        
+        if (!ai) {
+             return res.status(500).json({ success: false, error: 'AI integration is not configured on this server.' });
+        }
+
+        const systemInstruction = `You are an expert Diagram SVG Generator. 
+The user will provide a text prompt requesting a diagram. 
+Your ONLY task is to return a valid raw SVG string that represents the requested diagram.
+Do not wrap it in markdown blockquotes like \`\`\`svg. Output ONLY the <svg> element.
+Use simple <rect>, <circle>, <text>, <line>, and <path> elements to build the diagram cleanly.
+The background of the shapes should generally be white with dark borders to match a whiteboard.
+Use a clean sans-serif font for text. Keep the diagram scalable and easy to read.`;
+
+        const finalPrompt = `Create a diagram for: ${prompt}`;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: finalPrompt,
+            config: {
+                systemInstruction: systemInstruction,
+                temperature: 0.1
+            }
+        });
+
+        let svgContent = response.text;
+        
+        // Clean up markdown wrapping if Gemini ignores instructions
+        svgContent = svgContent.replace(/```svg\n?/g, '');
+        svgContent = svgContent.replace(/```\n?/g, '');
+        svgContent = svgContent.trim();
+        
+        res.status(200).json({
+            success: true,
+            svg: svgContent
+        });
+        
+    } catch (err) {
+        console.error('[Gemini Generation Error]', err);
+        res.status(500).json({ success: false, error: 'Failed to generate diagram from AI' });
+    }
+});
 
 // ─── POST /canvas/create ─── Create a new canvas (metadata only)
 router.post('/create', async (req, res) => {

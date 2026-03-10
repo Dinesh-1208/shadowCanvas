@@ -133,3 +133,8 @@ export async function updateRoomPassword(canvasId, password) {
     const res = await axios.post(`${BASE}/${canvasId}/password`, { password }, { headers: getAuthHeaders() });
     return res.data;
 }
+
+export async function generateDiagram(prompt) {
+    const res = await axios.post(`${BASE}/generate-diagram`, { prompt }, { headers: getAuthHeaders() });
+    return res.data;
+}
