@@ -465,6 +465,30 @@ export function useCanvas(initialState, roomCode) {
         return newEl;
     }
 
+    // ─── Add AI-generated elements as a single undo group ───────
+    // All elements share one undo entry so that Ctrl+Z removes the
+    // entire diagram in one step, just like any other draw action.
+    function addAiElements(parsedElements) {
+        if (!parsedElements || parsedElements.length === 0) return;
+
+        // Each parsed element already has a uuid from the svg parser,
+        // but guarantee unique IDs here to be safe.
+        const newEls = parsedElements.map((el) => ({ ...el, id: el.id || uuidv4() }));
+
+        // 1. Update canvas state
+        setElements((prev) => [...prev, ...newEls]);
+
+        // 2. Push a BATCH undo entry so one Ctrl+Z removes all of them
+        undoStack.current.push({ type: 'ADD_BATCH', elements: newEls });
+        redoStack.current = [];
+
+        // 3. Persist & broadcast every element individually
+        //    (matches the existing ADD_ELEMENT event schema — no changes needed)
+        for (const el of newEls) {
+            persistEvent('ADD_ELEMENT', el);
+        }
+    }
+
     // ─── Update element ─────────────────────────────────────────
     function updateElement(id, updates) {
         setElements((prev) =>
@@ -545,6 +569,14 @@ export function useCanvas(initialState, roomCode) {
             setElements((prev) => [...prev, action.element]);
             redoStack.current.push(action);
             persistEvent('ADD_ELEMENT', action.element);
+        } else if (action.type === 'ADD_BATCH') {
+            // Remove all elements in the batch at once
+            const ids = new Set(action.elements.map((e) => e.id));
+            setElements((prev) => prev.filter((e) => !ids.has(e.id)));
+            redoStack.current.push(action);
+            for (const el of action.elements) {
+                persistEvent('DELETE_ELEMENT', { id: el.id });
+            }
         }
     }
 
@@ -560,6 +592,13 @@ export function useCanvas(initialState, roomCode) {
             setElements((prev) => prev.filter((e) => e.id !== action.element.id));
             undoStack.current.push(action);
             persistEvent('DELETE_ELEMENT', { id: action.element.id });
+        } else if (action.type === 'ADD_BATCH') {
+            // Re-add all elements in the batch
+            setElements((prev) => [...prev, ...action.elements]);
+            undoStack.current.push(action);
+            for (const el of action.elements) {
+                persistEvent('ADD_ELEMENT', el);
+            }
         }
     }
 
@@ -778,5 +817,6 @@ export function useCanvas(initialState, roomCode) {
         activeCursors,
         activeUsers,
         emitCursorMove,
+        addAiElements,
     };
 }

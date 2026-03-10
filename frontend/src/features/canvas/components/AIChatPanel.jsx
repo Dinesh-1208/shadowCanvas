@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Send, Sparkles, Mic, MicOff, Loader2 } from 'lucide-react';
 import { generateDiagram } from '../../../utils/api';
+import { parseSvgToCanvasElements } from '../../../utils/svgParser';
 
-export default function AIChatPanel({ isOpen, onClose }) {
+export default function AIChatPanel({ isOpen, onClose, addAiElements }) {
     const [isVisible, setIsVisible] = useState(false);
     
     // Smooth mount/unmount logic
@@ -119,12 +120,33 @@ export default function AIChatPanel({ isOpen, onClose }) {
             const response = await generateDiagram(promptText);
             
             if (response.success && response.svg) {
+                // Show the raw SVG in the chat so the user can see what was generated
                 const aiResponse = { 
                     id: Date.now() + 1, 
                     role: 'assistant', 
                     content: response.svg 
                 };
                 setMessages(prev => [...prev, aiResponse]);
+
+                // Parse SVG into canvas elements and add to canvas
+                if (typeof addAiElements === 'function') {
+                    const canvasElements = parseSvgToCanvasElements(response.svg);
+                    
+                    if (canvasElements.length > 0) {
+                        addAiElements(canvasElements);
+                        setMessages(prev => [...prev, {
+                            id: Date.now() + 2,
+                            role: 'assistant',
+                            content: `✅ Diagram generated and added to canvas. (${canvasElements.length} element${canvasElements.length > 1 ? 's' : ''} added)`
+                        }]);
+                    } else {
+                        setMessages(prev => [...prev, {
+                            id: Date.now() + 2,
+                            role: 'assistant',
+                            content: '⚠️ The AI generated a response but no renderable shapes were found. Try rephrasing your prompt.'
+                        }]);
+                    }
+                }
             } else {
                 throw new Error("Invalid format received");
             }
