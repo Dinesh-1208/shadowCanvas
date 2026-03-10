@@ -3,7 +3,7 @@ import { X, Send, Sparkles, Mic, MicOff, Loader2 } from 'lucide-react';
 import { generateDiagram } from '../../../utils/api';
 import { parseSvgToCanvasElements } from '../../../utils/svgParser';
 
-export default function AIChatPanel({ isOpen, onClose, addAiElements }) {
+export default function AIChatPanel({ isOpen, onClose, addAiElements, pan, zoom, existingElements }) {
     const [isVisible, setIsVisible] = useState(false);
     
     // Smooth mount/unmount logic
@@ -142,7 +142,19 @@ export default function AIChatPanel({ isOpen, onClose, addAiElements }) {
 
                 // Parse JSON elements + connections into canvas objects
                 if (typeof addAiElements === 'function') {
-                    const canvasElements = parseSvgToCanvasElements(response.elements, connections);
+                    // Compute approximate canvas-space center of the current viewport
+                    const z = zoom || 1;
+                    const p = pan || { x: 0, y: 0 };
+                    // Canvas viewport is roughly 1200×700px (approximate, no DOM measure needed)
+                    const viewportCenter = {
+                        x: (-p.x / z) + (600 / z),
+                        y: (-p.y / z) + (350 / z),
+                    };
+
+                    const canvasElements = parseSvgToCanvasElements(response.elements, connections, {
+                        viewportCenter,
+                        existingElements: existingElements || [],
+                    });
                     
                     if (canvasElements.length > 0) {
                         addAiElements(canvasElements);

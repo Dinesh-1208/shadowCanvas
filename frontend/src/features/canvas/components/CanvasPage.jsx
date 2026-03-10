@@ -425,7 +425,14 @@ export default function CanvasPage() {
                 )}
 
                 {/* AI Chat Panel */}
-                <AIChatPanel isOpen={isAIChatOpen} onClose={() => setIsAIChatOpen(false)} addAiElements={canvas.addAiElements} />
+                <AIChatPanel
+                    isOpen={isAIChatOpen}
+                    onClose={() => setIsAIChatOpen(false)}
+                    addAiElements={canvas.addAiElements}
+                    pan={canvas.pan}
+                    zoom={canvas.zoom}
+                    existingElements={canvas.elements}
+                />
 
                 {/* Main Menu / Properties Panel Slide-out */}
                 {(!isViewMode && isMenuOpen) && (
