@@ -7,6 +7,7 @@ export default function ShareModal({ isOpen, onClose, roomCode, canvasId, roomPa
     const [pwdMsg, setPwdMsg] = useState('');
     const [toastMessage, setToastMessage] = useState(null);
     const [mounted, setMounted] = useState(false);
+    const [copiedKey, setCopiedKey] = useState(null);
 
     // Fade/scale animation handling
     useEffect(() => {
@@ -23,9 +24,11 @@ export default function ShareModal({ isOpen, onClose, roomCode, canvasId, roomPa
     const viewLink = `${baselink}?mode=view`;
     const editLink = `${baselink}?mode=edit`;
 
-    const handleCopy = (text) => {
+    const handleCopy = (text, key) => {
         navigator.clipboard.writeText(text).then(() => {
-            setToastMessage('Link copied to clipboard!');
+            setToastMessage('Copied to clipboard');
+            setCopiedKey(key);
+            setTimeout(() => setCopiedKey(null), 2000);
             setTimeout(() => setToastMessage(null), 2500);
         }).catch(err => console.error('Failed to copy: ', err));
     };
@@ -80,10 +83,13 @@ export default function ShareModal({ isOpen, onClose, roomCode, canvasId, roomPa
                             <div className="flex bg-white rounded-xl p-2 items-center border border-gray-200 transition-all shadow-sm">
                                 <span className="flex-1 text-sm text-gray-700 truncate mx-2 font-mono font-bold tracking-wide">{roomCode}</span>
                                 <button
-                                    onClick={() => handleCopy(roomCode)}
-                                    className="px-4 py-1.5 bg-gradient-to-r from-[#b2a4ff] to-[#9181ec] text-white rounded-lg text-xs font-semibold hover:shadow-[0_4px_12px_rgba(178,164,255,0.4)] hover:-translate-y-0.5 transition-all shrink-0"
+                                    onClick={() => handleCopy(roomCode, 'roomCode')}
+                                    className={`px-4 py-1.5 rounded-lg text-xs font-semibold hover:-translate-y-0.5 transition-all shrink-0 ${copiedKey === 'roomCode'
+                                        ? 'bg-green-500 text-white shadow-[0_4px_12px_rgba(34,197,94,0.4)] scale-105'
+                                        : 'bg-gradient-to-r from-[#b2a4ff] to-[#9181ec] text-white hover:shadow-[0_4px_12px_rgba(178,164,255,0.4)]'
+                                        }`}
                                 >
-                                    Copy
+                                    {copiedKey === 'roomCode' ? 'Copied!' : 'Copy'}
                                 </button>
                             </div>
                         </div>
@@ -121,10 +127,13 @@ export default function ShareModal({ isOpen, onClose, roomCode, canvasId, roomPa
                                         </span>
                                         {roomPassword && (
                                             <button
-                                                onClick={() => handleCopy(roomPassword)}
-                                                className="px-4 py-1.5 bg-gradient-to-r from-[#b2a4ff] to-[#9181ec] text-white rounded-lg text-xs font-semibold hover:shadow-[0_4px_12px_rgba(178,164,255,0.4)] hover:-translate-y-0.5 transition-all shrink-0"
+                                                onClick={() => handleCopy(roomPassword, 'roomPwd')}
+                                                className={`px-4 py-1.5 rounded-lg text-xs font-semibold hover:-translate-y-0.5 transition-all shrink-0 ${copiedKey === 'roomPwd'
+                                                    ? 'bg-green-500 text-white shadow-[0_4px_12px_rgba(34,197,94,0.4)] scale-105'
+                                                    : 'bg-gradient-to-r from-[#b2a4ff] to-[#9181ec] text-white hover:shadow-[0_4px_12px_rgba(178,164,255,0.4)]'
+                                                    }`}
                                             >
-                                                Copy
+                                                {copiedKey === 'roomPwd' ? 'Copied!' : 'Copy'}
                                             </button>
                                         )}
                                     </div>
@@ -168,10 +177,13 @@ export default function ShareModal({ isOpen, onClose, roomCode, canvasId, roomPa
                             <div className="flex bg-white rounded-xl p-2 items-center border border-gray-200 shadow-sm">
                                 <span className="flex-1 text-sm text-gray-600 truncate mx-2">{viewLink}</span>
                                 <button
-                                    onClick={() => handleCopy(viewLink)}
-                                    className="px-4 py-1.5 bg-gradient-to-r from-[#b2a4ff] to-[#9181ec] text-white rounded-lg text-xs font-semibold hover:shadow-[0_4px_12px_rgba(178,164,255,0.4)] hover:-translate-y-0.5 transition-all shrink-0"
+                                    onClick={() => handleCopy(viewLink, 'viewLink')}
+                                    className={`px-4 py-1.5 rounded-lg text-xs font-semibold hover:-translate-y-0.5 transition-all shrink-0 ${copiedKey === 'viewLink'
+                                        ? 'bg-green-500 text-white shadow-[0_4px_12px_rgba(34,197,94,0.4)] scale-105'
+                                        : 'bg-gradient-to-r from-[#b2a4ff] to-[#9181ec] text-white hover:shadow-[0_4px_12px_rgba(178,164,255,0.4)]'
+                                        }`}
                                 >
-                                    Copy
+                                    {copiedKey === 'viewLink' ? 'Copied!' : 'Copy'}
                                 </button>
                             </div>
                         </div>
@@ -181,10 +193,13 @@ export default function ShareModal({ isOpen, onClose, roomCode, canvasId, roomPa
                             <div className="flex bg-white rounded-xl p-2 items-center border border-gray-200 shadow-sm">
                                 <span className="flex-1 text-sm text-gray-600 truncate mx-2">{editLink}</span>
                                 <button
-                                    onClick={() => handleCopy(editLink)}
-                                    className="px-4 py-1.5 bg-gradient-to-r from-[#b2a4ff] to-[#9181ec] text-white rounded-lg text-xs font-semibold hover:shadow-[0_4px_12px_rgba(178,164,255,0.4)] hover:-translate-y-0.5 transition-all shrink-0"
+                                    onClick={() => handleCopy(editLink, 'editLink')}
+                                    className={`px-4 py-1.5 rounded-lg text-xs font-semibold hover:-translate-y-0.5 transition-all shrink-0 ${copiedKey === 'editLink'
+                                        ? 'bg-green-500 text-white shadow-[0_4px_12px_rgba(34,197,94,0.4)] scale-105'
+                                        : 'bg-gradient-to-r from-[#b2a4ff] to-[#9181ec] text-white hover:shadow-[0_4px_12px_rgba(178,164,255,0.4)]'
+                                        }`}
                                 >
-                                    Copy
+                                    {copiedKey === 'editLink' ? 'Copied!' : 'Copy'}
                                 </button>
                             </div>
                         </div>
