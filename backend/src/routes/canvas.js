@@ -16,7 +16,7 @@ const router = express.Router();
 // Initialize Gemini Client
 const ai = process.env.GEMINI_API_KEY ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }) : null;
 
-// ─── POST /canvas/generate-diagram ─── Generate an SVG from a prompt via Gemini
+// ─── POST /canvas/generate-diagram ─── Generate JSON diagram via Gemini
 router.post('/generate-diagram', async (req, res) => {
     try {
         const { prompt } = req.body;
@@ -26,16 +26,29 @@ router.post('/generate-diagram', async (req, res) => {
         }
         
         if (!ai) {
-             return res.status(500).json({ success: false, error: 'AI integration is not configured on this server.' });
+            return res.status(500).json({ success: false, error: 'AI integration is not configured on this server.' });
         }
 
-        const systemInstruction = `You are an expert Diagram SVG Generator. 
-The user will provide a text prompt requesting a diagram. 
-Your ONLY task is to return a valid raw SVG string that represents the requested diagram.
-Do not wrap it in markdown blockquotes like \`\`\`svg. Output ONLY the <svg> element.
-Use simple <rect>, <circle>, <text>, <line>, and <path> elements to build the diagram cleanly.
-The background of the shapes should generally be white with dark borders to match a whiteboard.
-Use a clean sans-serif font for text. Keep the diagram scalable and easy to read.`;
+        const systemInstruction = `You are an expert diagram layout engine.
+The user will describe a diagram. Your ONLY task is to return a VALID JSON object (no markdown, no explanation).
+
+The JSON must follow this exact schema:
+{
+  "elements": [
+    { "type": "rectangle", "x": 100, "y": 100, "width": 120, "height": 60, "text": "Label" },
+    { "type": "circle",    "x": 350, "y": 100, "radius": 40,              "text": "Label" },
+    { "type": "line",      "x1": 220, "y1": 130, "x2": 310, "y2": 130 },
+    { "type": "text",      "x": 120,  "y": 200,  "text": "Any label" }
+  ]
+}
+
+Rules:
+- All coordinates must be numbers (not strings).
+- "text" is optional on shapes; omit it if not needed.
+- Only use types: rectangle, circle, line, text.
+- Do NOT include any markdown, backticks, or prose — ONLY the raw JSON object.
+- Lay shapes out thoughtfully so they don't overlap and the diagram is readable.
+- Use a 800x600 coordinate space.`;
 
         const finalPrompt = `Create a diagram for: ${prompt}`;
 
@@ -43,28 +56,48 @@ Use a clean sans-serif font for text. Keep the diagram scalable and easy to read
             model: 'gemini-2.5-flash',
             contents: finalPrompt,
             config: {
-                systemInstruction: systemInstruction,
+                systemInstruction,
                 temperature: 0.1
             }
         });
 
-        let svgContent = response.text;
-        
-        // Clean up markdown wrapping if Gemini ignores instructions
-        svgContent = svgContent.replace(/```svg\n?/g, '');
-        svgContent = svgContent.replace(/```\n?/g, '');
-        svgContent = svgContent.trim();
-        
-        res.status(200).json({
-            success: true,
-            svg: svgContent
-        });
+        let raw = response.text.trim();
+
+        // Strip any accidental markdown fences Gemini might add
+        raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+
+        // Parse and validate
+        let parsed;
+        try {
+            parsed = JSON.parse(raw);
+        } catch {
+            console.error('[Gemini JSON Parse Error] Raw response:', raw);
+            return res.status(422).json({
+                success: false,
+                error: 'AI returned an invalid response. Please try rephrasing your prompt.',
+                raw  // send raw for debugging purposes
+            });
+        }
+
+        if (!parsed.elements || !Array.isArray(parsed.elements)) {
+            return res.status(422).json({
+                success: false,
+                error: 'AI response was missing the "elements" array. Please try again.'
+            });
+        }
+
+        // Sanitise elements — filter out any entries missing required fields
+        const VALID_TYPES = new Set(['rectangle', 'circle', 'line', 'text']);
+        const elements = parsed.elements.filter(el => el && VALID_TYPES.has(el.type));
+
+        res.status(200).json({ success: true, elements });
         
     } catch (err) {
         console.error('[Gemini Generation Error]', err);
         res.status(500).json({ success: false, error: 'Failed to generate diagram from AI' });
     }
 });
+
 
 // ─── POST /canvas/create ─── Create a new canvas (metadata only)
 router.post('/create', async (req, res) => {

@@ -119,45 +119,54 @@ export default function AIChatPanel({ isOpen, onClose, addAiElements }) {
         try {
             const response = await generateDiagram(promptText);
             
-            if (response.success && response.svg) {
-                // Show the raw SVG in the chat so the user can see what was generated
-                const aiResponse = { 
-                    id: Date.now() + 1, 
-                    role: 'assistant', 
-                    content: response.svg 
-                };
-                setMessages(prev => [...prev, aiResponse]);
+            if (response.success && response.elements) {
+                // Show a readable summary of what Gemini returned
+                const summary = response.elements
+                    .map(el => {
+                        if (el.type === 'rectangle') return `▭ Rectangle${el.text ? ` "${el.text}"` : ''}`;
+                        if (el.type === 'circle')    return `◎ Circle${el.text ? ` "${el.text}"` : ''}`;
+                        if (el.type === 'line')      return `— Line`;
+                        if (el.type === 'text')      return `T "${el.text || ''}"`;
+                        return el.type;
+                    })
+                    .join('\n');
 
-                // Parse SVG into canvas elements and add to canvas
+                setMessages(prev => [...prev, {
+                    id: Date.now() + 1,
+                    role: 'assistant',
+                    content: `🎨 Generated diagram with ${response.elements.length} element(s):\n${summary}`
+                }]);
+
+                // Parse JSON elements into canvas drawing objects and add to canvas
                 if (typeof addAiElements === 'function') {
-                    const canvasElements = parseSvgToCanvasElements(response.svg);
+                    const canvasElements = parseSvgToCanvasElements(response.elements);
                     
                     if (canvasElements.length > 0) {
                         addAiElements(canvasElements);
                         setMessages(prev => [...prev, {
                             id: Date.now() + 2,
                             role: 'assistant',
-                            content: `✅ Diagram generated and added to canvas. (${canvasElements.length} element${canvasElements.length > 1 ? 's' : ''} added)`
+                            content: `✅ Diagram added to canvas. (${canvasElements.length} shape${canvasElements.length > 1 ? 's' : ''} placed) You can drag, resize, or delete them like any other element.`
                         }]);
                     } else {
                         setMessages(prev => [...prev, {
                             id: Date.now() + 2,
                             role: 'assistant',
-                            content: '⚠️ The AI generated a response but no renderable shapes were found. Try rephrasing your prompt.'
+                            content: '⚠️ The diagram was generated but no renderable shapes were found. Try rephrasing your prompt.'
                         }]);
                     }
                 }
             } else {
-                throw new Error("Invalid format received");
+                throw new Error(response.error || 'Invalid format received');
             }
         } catch (error) {
-            console.error("Gemini AI API Error:", error);
-            const errorResponse = { 
-                id: Date.now() + 1, 
-                role: 'assistant', 
-                content: "I'm sorry, I encountered an error communicating with the AI. Please ensure the backend is connected and try again." 
-            };
-            setMessages(prev => [...prev, errorResponse]);
+            console.error('Gemini AI API Error:', error);
+            const msg = error?.response?.data?.error || error?.message || 'Unknown error';
+            setMessages(prev => [...prev, {
+                id: Date.now() + 1,
+                role: 'assistant',
+                content: `❌ Error: ${msg}`
+            }]);
         } finally {
             setIsThinking(false);
         }
