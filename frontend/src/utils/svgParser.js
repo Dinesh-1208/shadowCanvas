@@ -32,8 +32,8 @@ const DEFAULTS = {
     roughness:    0,
     edgeStyle:   'rounded',
     opacity:     100,
-    fontSize:    16,
-    fontFamily:  'normal',
+    fontSize:    18,          // slightly larger to suit Caveat's wide letterforms
+    fontFamily:  'handwriting', // Caveat — matches Excalidraw's hand-drawn aesthetic
 };
 
 // ─── Helpers ──────────────────────────────────────────────────

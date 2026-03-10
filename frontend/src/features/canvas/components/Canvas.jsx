@@ -469,7 +469,7 @@ export default function Canvas({
                         style={{
                             ...styles.textInput,
                             fontSize: currentStyle.fontSize || 16,
-                            fontFamily: currentStyle.fontFamily === 'handwriting' ? "'Comic Sans MS', cursive"
+                            fontFamily: currentStyle.fontFamily === 'handwriting' ? "'Caveat', 'Comic Sans MS', cursive"
                                 : currentStyle.fontFamily === 'code' ? "'Consolas', monospace"
                                     : "'Inter', sans-serif",
                             textAlign: currentStyle.textAlign || 'left',

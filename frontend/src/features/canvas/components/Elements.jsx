@@ -131,7 +131,7 @@ export function FreehandElement({ el }) {
 // ─── Text ───────────────────────────────────────────────────────
 // ─── Text ───────────────────────────────────────────────────────
 const FONT_CSS = {
-    handwriting: "'Comic Sans MS', 'Chalkboard SE', cursive",
+    handwriting: "'Caveat', 'Comic Sans MS', 'Chalkboard SE', cursive",
     normal: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     code: "'Consolas', 'Courier New', monospace",
 };
