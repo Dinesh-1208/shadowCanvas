@@ -5,14 +5,12 @@
  * ShadowCanvas drawing objects, then automatically arranges them into a
  * structured, readable layout centred on the current viewport.
  *
- * Layout algorithm:
- *   1. Build a directed graph from the connections array.
- *   2. Topological BFS to assign each node a "column level" (x-axis).
- *   3. Within each column, assign "row" positions (y-axis).
- *   4. Apply minimum spacing (H: 220px, V: 130px).
- *   5. Translate the entire diagram so its centre aligns with the
- *      current viewport centre.
- *   6. Nudge if the bounding box would overlap existing canvas elements.
+ * Schema support:
+ *   - Elements may use either "label" or "text" for their display name.
+ *   - Elements may carry an "id" field; connections reference by id first,
+ *     then fall back to matching by label.
+ *   - The "layout" hint (horizontal / vertical / grid) controls which axis
+ *     the BFS column dimension maps to.
  */
 
 import { v4 as uuidv4 } from 'uuid';
@@ -56,16 +54,16 @@ const bounds = (el) => ({ x: el.x ?? 0, y: el.y ?? 0, width: el.width ?? 0, heig
 
 /**
  * Assigns {col, row} to each node using BFS topological ordering.
- * Nodes with no incoming edges are treated as roots (col 0).
+ * Connections can reference nodes by id OR by label.
  *
- * @param {string[]} labels     - All node labels
- * @param {Array}    conns      - Connections: [{from, to}]
+ * @param {string[]} keys   - Lookup keys for each node (id if present, else label)
+ * @param {Array}    conns  - Connections: [{from, to}] — values are ids or labels
  * @returns {Map<string, {col, row}>}
  */
-function computeLayout(labels, conns) {
+function computeLayout(keys, conns) {
     // Build adjacency + in-degree maps
-    const children  = new Map(labels.map(l => [l, []]));
-    const inDegree  = new Map(labels.map(l => [l, 0]));
+    const children  = new Map(keys.map(k => [k, []]));
+    const inDegree  = new Map(keys.map(k => [k, 0]));
 
     for (const c of conns) {
         if (children.has(c.from) && children.has(c.to)) {
@@ -78,21 +76,20 @@ function computeLayout(labels, conns) {
     const col = new Map();
     const queue = [];
 
-    for (const [label, deg] of inDegree) {
+    for (const [key, deg] of inDegree) {
         if (deg === 0) {
-            col.set(label, 0);
-            queue.push(label);
+            col.set(key, 0);
+            queue.push(key);
         }
     }
 
     // Handle isolated nodes (not in connections at all) — put them in col 0
-    for (const label of labels) {
-        if (!col.has(label)) {
-            // Check if involved in any connection
-            const involved = conns.some(c => c.from === label || c.to === label);
+    for (const key of keys) {
+        if (!col.has(key)) {
+            const involved = conns.some(c => c.from === key || c.to === key);
             if (!involved) {
-                col.set(label, 0);
-                queue.push(label);
+                col.set(key, 0);
+                queue.push(key);
             }
         }
     }
@@ -111,19 +108,18 @@ function computeLayout(labels, conns) {
     }
 
     // Catch any node that BFS missed (cyclic sub-graphs, etc.)
-    for (const label of labels) {
-        if (!col.has(label)) col.set(label, 0);
+    for (const key of keys) {
+        if (!col.has(key)) col.set(key, 0);
     }
 
     // Row assignment: within each column, assign rows top-to-bottom
     const rowCounter = new Map();
     const position   = new Map();
 
-    // Sort within BFS order so rows are assigned in a stable order
-    for (const label of queue) {
-        const c = col.get(label);
+    for (const key of queue) {
+        const c = col.get(key);
         const r = rowCounter.get(c) ?? 0;
-        position.set(label, { col: c, row: r });
+        position.set(key, { col: c, row: r });
         rowCounter.set(c, r + 1);
     }
 
@@ -131,18 +127,16 @@ function computeLayout(labels, conns) {
 }
 
 /**
- * Converts layout positions to pixel coordinates and returns a
- * label → {x, y, width, height} map.
+ * Converts layout positions to pixel coordinates.
+ * Supports 'horizontal' (default), 'vertical', and 'grid' layout hints.
  *
- * The diagram's own centre is placed at {0, 0}; the caller then
- * translates everything to the viewport centre.
- *
- * @param {Map}   position   - label → {col, row}
- * @param {Array} jsonEls    - Original Gemini elements (for w/h/radius)
+ * @param {Map}    position   - key → {col, row}
+ * @param {Array}  jsonEls    - Original Gemini elements (for w/h/radius)
+ * @param {string} layout     - 'horizontal' | 'vertical' | 'grid'
  * @returns {Map<string, {x, y, width, height}>}
  */
-function positionToPixels(position, jsonEls) {
-    const shapeMap = new Map(jsonEls.map(el => [el.text, el]));
+function positionToPixels(position, jsonEls, layout = 'horizontal') {
+    const shapeMap = new Map(jsonEls.map(el => [el._key, el]));
     const pixelPos = new Map();
 
     let maxCol = 0, maxRow = 0;
@@ -151,26 +145,92 @@ function positionToPixels(position, jsonEls) {
         if (row > maxRow) maxRow = row;
     }
 
-    const totalW = maxCol * H_SPACING;
-    const totalH = maxRow * V_SPACING;
+    // For 'grid' layout, arrange in a square-ish grid ignoring graph topology
+    if (layout === 'grid') {
+        const total  = position.size;
+        const cols   = Math.max(1, Math.ceil(Math.sqrt(total)));
+        let idx = 0;
+        const keyArr = [...position.keys()];
+        for (const key of keyArr) {
+            const gcol = idx % cols;
+            const grow = Math.floor(idx / cols);
+            const src  = shapeMap.get(key);
+            const td   = getTypeDims(src?.type);
+            const w    = src?.type === 'circle' ? num(src.radius, DEFAULT_R) * 2 : num(src?.width, td.w);
+            const h    = src?.type === 'circle' ? num(src.radius, DEFAULT_R) * 2 : num(src?.height, td.h);
+            const totalW = (cols - 1) * H_SPACING;
+            const totalH = (Math.ceil(total / cols) - 1) * V_SPACING;
+            pixelPos.set(key, {
+                x: gcol * H_SPACING - totalW / 2 - w / 2,
+                y: grow * V_SPACING - totalH / 2 - h / 2,
+                width: w, height: h,
+            });
+            idx++;
+        }
+        return pixelPos;
+    }
 
-    for (const [label, { col, row }] of position) {
-        const src = shapeMap.get(label);
-        const w = src?.type === 'circle'
-            ? num(src.radius, DEFAULT_R) * 2
-            : num(src?.width, DEFAULT_W);
-        const h = src?.type === 'circle'
-            ? num(src.radius, DEFAULT_R) * 2
-            : num(src?.height, DEFAULT_H);
+    // Horizontal (default) — BFS col maps to X, row maps to Y
+    // Vertical — BFS col maps to Y, row maps to X
+    const isVertical = layout === 'vertical';
 
-        // Pixel origin relative to diagram centre (0,0)
-        const px = col * H_SPACING - totalW / 2 - w / 2;
-        const py = row * V_SPACING - totalH / 2 - h / 2;
+    const totalMajor = maxCol * (isVertical ? V_SPACING : H_SPACING);
+    const totalMinor = maxRow * (isVertical ? H_SPACING : V_SPACING);
 
-        pixelPos.set(label, { x: px, y: py, width: w, height: h });
+    // Default dimensions per shape type
+    const TYPE_DEFAULTS = {
+        rectangle:    { w: DEFAULT_W, h: DEFAULT_H },
+        circle:       { w: DEFAULT_R * 2, h: DEFAULT_R * 2 },
+        database:     { w: 80,  h: 100 },
+        cloud:        { w: 140, h: 70  },
+        actor:        { w: 60,  h: 100 },
+        queue:        { w: 120, h: 50  },
+        microservice: { w: 130, h: 90  },
+        text:         { w: DEFAULT_W, h: DEFAULT_H },
+    };
+
+    for (const [key, { col, row }] of position) {
+        const src = shapeMap.get(key);
+        const td  = TYPE_DEFAULTS[src?.type] ?? { w: DEFAULT_W, h: DEFAULT_H };
+
+        let w, h;
+        if (src?.type === 'circle') {
+            const r = num(src.radius, DEFAULT_R);
+            w = r * 2; h = r * 2;
+        } else {
+            w = num(src?.width,  td.w);
+            h = num(src?.height, td.h);
+        }
+
+        let px, py;
+        if (isVertical) {
+            // col = y-axis level, row = x-axis lane
+            px = row * H_SPACING - totalMinor / 2 - w / 2;
+            py = col * V_SPACING - totalMajor / 2 - h / 2;
+        } else {
+            px = col * H_SPACING - totalMajor / 2 - w / 2;
+            py = row * V_SPACING - totalMinor / 2 - h / 2;
+        }
+
+        pixelPos.set(key, { x: px, y: py, width: w, height: h });
     }
 
     return pixelPos;
+}
+
+/** Returns default {w, h} for a shape type. */
+function getTypeDims(type) {
+    const map = {
+        rectangle:    { w: DEFAULT_W, h: DEFAULT_H },
+        circle:       { w: DEFAULT_R * 2, h: DEFAULT_R * 2 },
+        database:     { w: 80,  h: 100 },
+        cloud:        { w: 140, h: 70  },
+        actor:        { w: 60,  h: 100 },
+        queue:        { w: 120, h: 50  },
+        microservice: { w: 130, h: 90  },
+        text:         { w: DEFAULT_W, h: DEFAULT_H },
+    };
+    return map[type] ?? { w: DEFAULT_W, h: DEFAULT_H };
 }
 
 /**
@@ -275,6 +335,104 @@ const convertElement = (el, overridePos) => {
             }];
         }
 
+        // ── Extended AI diagram shapes ────────────────────────────────
+        case 'database': {
+            const x = overridePos ? overridePos.x : num(el.x);
+            const y = overridePos ? overridePos.y : num(el.y);
+            const w = overridePos ? overridePos.width  : num(el.width,  80);
+            const h = overridePos ? overridePos.height : num(el.height, 100);
+            const canvasEl = { ...base, type: 'database', x, y, width: w, height: h };
+            if (el.text) {
+                const fs = 13;
+                return [canvasEl, {
+                    ...base, id: uuidv4(), type: 'text',
+                    x: x + w / 2 - (el.text.length * fs * 0.3),
+                    y: y + h + 6,
+                    width: el.text.length * (fs * 0.6), height: fs * 1.4,
+                    text: el.text, fontSize: fs, strokeColor: '#1a103d',
+                }];
+            }
+            return [canvasEl];
+        }
+
+        case 'cloud': {
+            const x = overridePos ? overridePos.x : num(el.x);
+            const y = overridePos ? overridePos.y : num(el.y);
+            const w = overridePos ? overridePos.width  : num(el.width,  140);
+            const h = overridePos ? overridePos.height : num(el.height,  70);
+            const canvasEl = { ...base, type: 'cloud', x, y, width: w, height: h };
+            if (el.text) {
+                const fs = 13;
+                return [canvasEl, {
+                    ...base, id: uuidv4(), type: 'text',
+                    x: x + w / 2 - (el.text.length * fs * 0.3),
+                    y: y + h * 0.55 - fs / 2,
+                    width: el.text.length * (fs * 0.6), height: fs * 1.4,
+                    text: el.text, fontSize: fs, strokeColor: '#1a103d',
+                }];
+            }
+            return [canvasEl];
+        }
+
+        case 'actor': {
+            const x = overridePos ? overridePos.x : num(el.x);
+            const y = overridePos ? overridePos.y : num(el.y);
+            const w = overridePos ? overridePos.width  : num(el.width,  60);
+            const h = overridePos ? overridePos.height : num(el.height, 100);
+            const canvasEl = { ...base, type: 'actor', x, y, width: w, height: h };
+            if (el.text) {
+                const fs = 13;
+                return [canvasEl, {
+                    ...base, id: uuidv4(), type: 'text',
+                    x: x + w / 2 - (el.text.length * fs * 0.3),
+                    y: y + h + 6,
+                    width: el.text.length * (fs * 0.6), height: fs * 1.4,
+                    text: el.text, fontSize: fs, strokeColor: '#1a103d',
+                }];
+            }
+            return [canvasEl];
+        }
+
+        case 'queue': {
+            const x = overridePos ? overridePos.x : num(el.x);
+            const y = overridePos ? overridePos.y : num(el.y);
+            const w = overridePos ? overridePos.width  : num(el.width,  120);
+            const h = overridePos ? overridePos.height : num(el.height,  50);
+            const canvasEl = { ...base, type: 'queue', x, y, width: w, height: h };
+            if (el.text) {
+                const fs = 13;
+                return [canvasEl, {
+                    ...base, id: uuidv4(), type: 'text',
+                    x: x + w / 2 - (el.text.length * fs * 0.3),
+                    y: y + h / 2 - fs / 2,
+                    width: el.text.length * (fs * 0.6), height: fs * 1.4,
+                    text: el.text, fontSize: fs, strokeColor: '#1a103d',
+                }];
+            }
+            return [canvasEl];
+        }
+
+        case 'microservice': {
+            const x = overridePos ? overridePos.x : num(el.x);
+            const y = overridePos ? overridePos.y : num(el.y);
+            const w = overridePos ? overridePos.width  : num(el.width,  130);
+            const h = overridePos ? overridePos.height : num(el.height,  90);
+            const canvasEl = { ...base, type: 'microservice', x, y, width: w, height: h };
+            if (el.text) {
+                const fs = 12;
+                const tagH = Math.max(14, h * 0.18);
+                return [canvasEl, {
+                    ...base, id: uuidv4(), type: 'text',
+                    x: x + 6,
+                    y: y + tagH / 2 - fs / 2,
+                    width: el.text.length * (fs * 0.6), height: fs * 1.4,
+                    text: el.text, fontSize: fs,
+                    strokeColor: '#ffffff',  // white text on dark tag banner
+                }];
+            }
+            return [canvasEl];
+        }
+
         default:
             return null;
     }
@@ -311,11 +469,12 @@ const computeEdgePoints = (src, tgt) => {
     return { x1, y1, x2, y2 };
 };
 
-const resolveConnections = (connections, labelToEl) => {
+const resolveConnections = (connections, idToEl, labelToEl) => {
     const lines = [];
     for (const conn of (connections || [])) {
-        const srcEl = labelToEl[conn.from];
-        const tgtEl = labelToEl[conn.to];
+        // Prefer id-based lookup, fall back to label-based
+        const srcEl = idToEl[conn.from] || labelToEl[conn.from];
+        const tgtEl = idToEl[conn.to]   || labelToEl[conn.to];
         if (!srcEl || !tgtEl) {
             console.warn(`[Connections] Cannot resolve "${conn.from}" → "${conn.to}"`);
             continue;
@@ -337,6 +496,7 @@ const resolveConnections = (connections, labelToEl) => {
                 y: (y1 + y2) / 2 - 14,
                 width: conn.label.length * (fs * 0.6), height: fs * 1.4,
                 text: conn.label, fontSize: fs, strokeColor: '#6b7280',
+                fontFamily: 'handwriting',
             });
         }
     }
@@ -353,6 +513,7 @@ const resolveConnections = (connections, labelToEl) => {
  * @param {Object} options
  * @param {Object} options.viewportCenter     - {x, y} centre of canvas viewport
  * @param {Array}  options.existingElements   - current canvas elements (for collision avoidance)
+ * @param {string} options.layout             - 'horizontal' | 'vertical' | 'grid'
  */
 export const parseSvgToCanvasElements = (
     jsonElements,
@@ -364,18 +525,38 @@ export const parseSvgToCanvasElements = (
         return [];
     }
 
-    const { viewportCenter, existingElements = [] } = options;
+    const { viewportCenter, existingElements = [], layout = 'horizontal' } = options;
 
-    // ── 1. Determine which elements have text labels (for layout)
-    const labeled   = jsonElements.filter(el => el.text);
-    const unlabeled = jsonElements.filter(el => !el.text);
-    const labels    = labeled.map(el => el.text);
+    // ── 0. Normalize elements: unify label/text field, attach lookup key
+    //    The backend already normalises, but be defensive client-side too.
+    const normalized = jsonElements.map(el => ({
+        ...el,
+        text:  el.text  || el.label || '',
+        label: el.label || el.text  || '',
+        // Use provided id as the lookup key; fall back to the label
+        _key:  el.id    || el.label || el.text || uuidv4(),
+    }));
 
-    // ── 2. Compute graph layout → label → {col, row}
-    const position = computeLayout(labels, connections);
+    // ── 1. Determine which elements have a key (for layout) vs unlabeled
+    const labeled   = normalized.filter(el => el._key && el.text);
+    const unlabeled = normalized.filter(el => !el.text);
+    const keys      = labeled.map(el => el._key);
+
+    // Normalize connections: remap from/to to _key space
+    // Build id→_key and label→_key lookup to remap connections
+    const idToKey    = new Map(labeled.filter(el => el.id).map(el => [el.id,    el._key]));
+    const labelToKey = new Map(labeled.map(el => [el.label, el._key]));
+    const normalizedConns = connections.map(c => ({
+        ...c,
+        from: idToKey.get(c.from) || labelToKey.get(c.from) || c.from,
+        to:   idToKey.get(c.to)   || labelToKey.get(c.to)   || c.to,
+    }));
+
+    // ── 2. Compute graph layout → key → {col, row}
+    const position = computeLayout(keys, normalizedConns);
 
     // ── 3. Convert layout positions to pixel coords (centred at 0,0)
-    const pixelPos = positionToPixels(position, labeled);
+    const pixelPos = positionToPixels(position, labeled, layout);
 
     // ── 4. Compute overall diagram bounding box to apply viewport translate
     let minPx = Infinity, minPy = Infinity, maxPx = -Infinity, maxPy = -Infinity;
@@ -404,31 +585,35 @@ export const parseSvgToCanvasElements = (
 
     // ── 7. Apply translation to all pixel positions
     const translatedPos = new Map();
-    for (const [label, pos] of pixelPos) {
-        translatedPos.set(label, {
+    for (const [key, pos] of pixelPos) {
+        translatedPos.set(key, {
             x: pos.x + tx, y: pos.y + ty,
             width: pos.width, height: pos.height,
         });
     }
 
     // ── 8. Convert elements to canvas objects
-    const result  = [];
-    const labelToEl = {};   // maps label → primary shape element (for connections)
+    const result    = [];
+    const idToEl    = {};   // element.id   → primary shape canvas element
+    const labelToEl = {};   // element.text → primary shape canvas element
 
     for (const el of labeled) {
         try {
-            const overridePos = translatedPos.get(el.text);
+            const overridePos = translatedPos.get(el._key);
             const converted   = convertElement(el, overridePos);
             if (converted) {
                 result.push(...converted);
-                labelToEl[el.text] = converted[0];
+                // Register under both id and label so connection resolver can find it
+                if (el.id)   idToEl[el.id]      = converted[0];
+                if (el.text) labelToEl[el.text]  = converted[0];
+                if (el.label && el.label !== el.text) labelToEl[el.label] = converted[0];
             }
         } catch (err) {
             console.warn('[Layout Engine] Failed to convert element:', el, err);
         }
     }
 
-    // Unlabeled elements (standalone text etc.) get placed below the diagram
+    // Unlabeled elements get placed below the diagram
     let unlabeledY = (maxPy + ty) + V_SPACING;
     for (const el of unlabeled) {
         try {
@@ -445,14 +630,14 @@ export const parseSvgToCanvasElements = (
         }
     }
 
-    // ── 9. Resolve connections using final positioned elements
-    const connectionLines = resolveConnections(connections, labelToEl);
+    // ── 9. Resolve connections (id-first, then label fallback)
+    const connectionLines = resolveConnections(normalizedConns, idToEl, labelToEl);
     result.push(...connectionLines);
 
     console.log(
         `[Layout Engine] ${jsonElements.length} elements + ${connections.length} connections` +
         ` → ${result.length} canvas objects (${connectionLines.length} arrows)` +
-        ` centred at (${Math.round(vc.x)}, ${Math.round(vc.y)})`
+        ` layout=${layout} centred at (${Math.round(vc.x)}, ${Math.round(vc.y)})`
     );
 
     return result;

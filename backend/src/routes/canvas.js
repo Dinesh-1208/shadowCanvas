@@ -16,97 +16,120 @@ const router = express.Router();
 // Initialize Gemini Client
 const ai = process.env.GEMINI_API_KEY ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }) : null;
 
-// ─── POST /canvas/generate-diagram ─── Generate JSON diagram via Gemini
+// ─── POST /canvas/generate-diagram ─── AI assistant: chat or diagram
 router.post('/generate-diagram', async (req, res) => {
     try {
         const { prompt } = req.body;
-        
+
         if (!prompt) {
             return res.status(400).json({ success: false, error: 'Prompt is required' });
         }
-        
+
         if (!ai) {
             return res.status(500).json({ success: false, error: 'AI integration is not configured on this server.' });
         }
 
-        const systemInstruction = `You are an expert diagram layout engine.
-The user will describe a diagram. Your ONLY task is to return a VALID JSON object (no markdown, no explanation).
+        // ── Light-touch system instruction ─────────────────────────────────────
+        // Gemini decides naturally whether to chat or draw.
+        // We auto-detect the response type on the backend — no forced schema.
+        const systemInstruction = `You are a helpful AI diagram assistant embedded in ShadowCanvas, a collaborative whiteboard tool.
 
-The JSON must follow this exact schema:
+You have two responsibilities:
+
+1. CONVERSATION — When the user greets you, asks a question, or says something that is NOT a drawing request, respond naturally and helpfully as plain text. Be warm and encouraging. Mention that you can draw diagrams if they'd like.
+
+2. DIAGRAM GENERATION — When the user asks you to draw, create, generate, or describe a diagram, system, flowchart, architecture, or any visual, respond ONLY with a raw JSON object (no markdown fences, no extra text before or after). The JSON must follow this schema:
+
 {
+  "diagramType": "system architecture",
+  "layout": "horizontal",
   "elements": [
-    { "type": "rectangle", "x": 100, "y": 100, "width": 120, "height": 60, "text": "Server" },
-    { "type": "circle",    "x": 400, "y": 100, "radius": 40, "text": "Database" },
-    { "type": "text",      "x": 120, "y": 220, "text": "Any standalone label" }
+    { "id": "node1", "type": "rectangle",    "label": "Web Server"   },
+    { "id": "node2", "type": "database",     "label": "Users DB"     },
+    { "id": "node3", "type": "microservice", "label": "Auth Service" },
+    { "id": "node4", "type": "cloud",        "label": "AWS S3"       },
+    { "id": "node5", "type": "actor",        "label": "User"         },
+    { "id": "node6", "type": "queue",        "label": "Job Queue"    },
+    { "id": "node7", "type": "circle",       "label": "Cache"        }
   ],
   "connections": [
-    { "from": "Server", "to": "Database", "label": "optional arrow label" }
+    { "from": "node1", "to": "node2", "label": "reads/writes" }
   ]
 }
 
-Rules:
-- All coordinates must be numbers (not strings).
-- "text" on shapes is required so connections can reference elements by name.
-- Only use types: rectangle, circle, text in "elements". Do NOT put lines in elements — use "connections" instead.
-- "connections" is an array of relationships between named shapes. Use the same text as the shape labels.
-- "label" on a connection is optional.
-- Do NOT include any markdown, backticks, or prose — ONLY the raw JSON object.
-- Lay shapes out thoughtfully so they don't overlap and the diagram is readable.
-- Use a 800x600 coordinate space.
-- Always include a "connections" array (it can be empty [] if there are no relationships).`;
+Diagram rules (only when generating a diagram):
+- Every element needs a unique "id" and a "label".
+- "connections" use element ids for "from" and "to". Use [] if no connections.
+- "layout": "horizontal" for pipelines/chains, "vertical" for flowcharts, "grid" for clusters.
+- Choose the right shape: rectangle=service/server, database=DB/storage, microservice=container, cloud=cloud/CDN, actor=user/client, queue=message queue, circle=cache/hub, text=label.
 
-        const finalPrompt = `Create a diagram for: ${prompt}`;
+When in doubt about the user's intent, ask a friendly clarifying question rather than guessing.`;
 
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
-            contents: finalPrompt,
-            config: {
-                systemInstruction,
-                temperature: 0.1
-            }
+            contents: prompt,
+            config: { systemInstruction, temperature: 0.3 }
         });
 
         let raw = response.text.trim();
 
-        // Strip any accidental markdown fences Gemini might add
-        raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+        // Strip accidental markdown fences (Gemini sometimes adds them)
+        raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
 
-        // Parse and validate
-        let parsed;
-        try {
-            parsed = JSON.parse(raw);
-        } catch {
-            console.error('[Gemini JSON Parse Error] Raw response:', raw);
-            return res.status(422).json({
-                success: false,
-                error: 'AI returned an invalid response. Please try rephrasing your prompt.',
-                raw
-            });
+        // ── Auto-detect: try to parse as diagram JSON ──────────────────────────
+        // If the response looks like it starts with { it might be diagram JSON.
+        // If parse succeeds and contains an elements array → treat as diagram.
+        // Otherwise → treat as plain conversational text.
+        if (raw.startsWith('{')) {
+            let parsed = null;
+            try { parsed = JSON.parse(raw); } catch { /* not JSON, fall through to chat */ }
+
+            if (parsed && Array.isArray(parsed.elements) && parsed.elements.length > 0) {
+                // ── DIAGRAM response ───────────────────────────────────────────
+                const VALID_TYPES = new Set([
+                    'rectangle', 'circle', 'text',
+                    'database', 'cloud', 'actor', 'queue', 'microservice',
+                ]);
+
+                const elements = parsed.elements
+                    .filter(el => el && VALID_TYPES.has(el.type))
+                    .map(el => ({
+                        ...el,
+                        label: el.label || el.text || '',
+                        text:  el.label || el.text || '',
+                    }));
+
+                const connections = Array.isArray(parsed.connections)
+                    ? parsed.connections.filter(c => c && c.from && c.to)
+                    : [];
+
+                const layout = ['horizontal', 'vertical', 'grid'].includes(parsed.layout)
+                    ? parsed.layout : 'horizontal';
+
+                return res.status(200).json({
+                    success: true,
+                    mode: 'diagram',
+                    diagramType: parsed.diagramType || 'diagram',
+                    elements,
+                    connections,
+                    layout,
+                });
+            }
         }
 
-        if (!parsed.elements || !Array.isArray(parsed.elements)) {
-            return res.status(422).json({
-                success: false,
-                error: 'AI response was missing the "elements" array. Please try again.'
-            });
-        }
+        // ── CHAT response — plain text (or JSON that didn't look like a diagram) ─
+        return res.status(200).json({
+            success: true,
+            mode: 'chat',
+            message: raw,
+        });
 
-        // Sanitise elements — filter out any entries missing required fields
-        const VALID_TYPES = new Set(['rectangle', 'circle', 'text']);
-        const elements = parsed.elements.filter(el => el && VALID_TYPES.has(el.type));
-
-        // Pass connections through (default to empty array if missing)
-        const connections = Array.isArray(parsed.connections)
-            ? parsed.connections.filter(c => c && typeof c.from === 'string' && typeof c.to === 'string')
-            : [];
-
-        res.status(200).json({ success: true, elements, connections });
-        
     } catch (err) {
         console.error('[Gemini Generation Error]', err);
-        res.status(500).json({ success: false, error: 'Failed to generate diagram from AI' });
+        res.status(500).json({ success: false, error: 'Failed to get a response from AI. Please try again.' });
     }
 });
+
 
 
 

@@ -17,7 +17,18 @@ export default function AIChatPanel({ isOpen, onClose, addAiElements, pan, zoom,
     }, [isOpen]);
 
     const initialMessages = [
-        { id: 1, role: 'assistant', content: 'Hello! I am your AI assistant. How can I help you create diagrams today?' }
+        {
+            id: 1, role: 'assistant',
+            content: `👋 Hi! I'm your AI diagram assistant for ShadowCanvas.
+
+I can generate diagrams, shapes, and system architectures directly on your canvas.
+
+Try asking me:
+• draw a server connected to a database
+• create a login flowchart
+• draw a microservice architecture
+• generate a network topology diagram`,
+        }
     ];
     
     // Core States
@@ -99,10 +110,26 @@ export default function AIChatPanel({ isOpen, onClose, addAiElements, pan, zoom,
         scrollToBottom();
     }, [messages]);
 
+    // ─── Local greeting detector ──────────────────────────────────────
+    // Handles obvious conversational messages instantly without an API call.
+    const GREETING_RE = /^(hi+|hey+|hello+|good\s*(morning|afternoon|evening|night)|howdy|greetings|sup|yo|thanks?|thank\s*you|thx|ty|what('s|s)\s*(up|new)|how\s*are\s*you|nice|great|cool|awesome|ok(ay)?|sure|got\s*it|understood|perfect|sounds?\s*good|can\s*you\s*help|help\s*me|what\s*can\s*you\s*do|what\s*do\s*you\s*do)[?!.]*$/i;
+
+    const GREETING_REPLY = `👋 Hi! I'm your AI diagram assistant.
+
+I can help you create diagrams, shapes, and workflows directly on the canvas.
+
+Try something like:
+• **draw a server connected to a database**
+• **create a login flowchart**
+• **draw a microservice architecture with auth and queue**
+• **generate a three-tier web architecture**
+
+Just describe what you'd like and I'll draw it! 🎨`;
+
     const handleSend = async (e) => {
         e.preventDefault();
         
-        // Stop listening if sending manually while voice is active
+        // Stop speech recognition if active
         if (isListening && recognitionRef.current) {
              recognitionRef.current.stop();
              setIsListening(false);
@@ -111,41 +138,65 @@ export default function AIChatPanel({ isOpen, onClose, addAiElements, pan, zoom,
         const promptText = inputValue.trim();
         if (!promptText) return;
         
-        const newUserMessage = { id: Date.now(), role: 'user', content: promptText };
-        setMessages(prev => [...prev, newUserMessage]);
+        setMessages(prev => [...prev, { id: Date.now(), role: 'user', content: promptText }]);
         setInputValue('');
+
+        // ── Fast path: handle obvious greetings locally (no API call) ──
+        if (GREETING_RE.test(promptText)) {
+            setMessages(prev => [...prev, { id: Date.now() + 1, role: 'assistant', content: GREETING_REPLY }]);
+            return;
+        }
+
+        // ── Slow path: ask Gemini ──────────────────────────────────────
         setIsThinking(true);
 
         try {
             const response = await generateDiagram(promptText);
-            
-            if (response.success && response.elements) {
-                // Build a concise summary for the chat
+
+            if (!response.success) {
+                throw new Error(response.error || 'Unknown error from AI');
+            }
+
+            // ── MODE: CHAT — display message only, never touch canvas ──
+            if (response.mode === 'chat') {
+                setMessages(prev => [...prev, {
+                    id: Date.now() + 1,
+                    role: 'assistant',
+                    content: response.message || '(No message from AI)',
+                }]);
+                return;
+            }
+
+            // ── MODE: DIAGRAM — render on canvas ───────────────────────
+            if (response.mode === 'diagram' && response.elements) {
                 const connections = response.connections || [];
-                const summary = response.elements
-                    .map(el => {
-                        if (el.type === 'rectangle') return `\u25ad Rectangle${el.text ? ` "${el.text}"` : ''}`;
-                        if (el.type === 'circle')    return `\u25ce Circle${el.text ? ` "${el.text}"` : ''}`;
-                        if (el.type === 'text')      return `T "${el.text || ''}"`;
-                        return el.type;
-                    })
-                    .concat(
-                        connections.map(c => `\u2192 ${c.from} \u2014 ${c.to}${c.label ? ` (${c.label})` : ''}`)
-                    )
-                    .join('\n');
+                const layout      = response.layout      || 'horizontal';
+                const diagramType = response.diagramType || 'diagram';
+
+                const SHAPE_ICONS = {
+                    rectangle: '▭', circle: '◎', database: '🗄',
+                    cloud: '☁',  actor: '🚶', queue: '⇶',
+                    microservice: '⬡', text: 'T',
+                };
+
+                const summary = [
+                    ...response.elements.map(el => {
+                        const icon  = SHAPE_ICONS[el.type] || el.type;
+                        const label = el.label || el.text || '';
+                        return `${icon} ${el.type}${label ? ` "${label}"` : ''}`;
+                    }),
+                    ...connections.map(c => `→ ${c.from} — ${c.to}${c.label ? ` (${c.label})` : ''}`),
+                ].join('\n');
 
                 setMessages(prev => [...prev, {
                     id: Date.now() + 1,
                     role: 'assistant',
-                    content: `\uD83C\uDFA8 Generated diagram with ${response.elements.length} shape(s) and ${connections.length} connection(s):\n${summary}`
+                    content: `🎨 **${diagramType}** · ${response.elements.length} shape(s) · ${connections.length} connection(s) · layout: ${layout}\n${summary}`,
                 }]);
 
-                // Parse JSON elements + connections into canvas objects
                 if (typeof addAiElements === 'function') {
-                    // Compute approximate canvas-space center of the current viewport
                     const z = zoom || 1;
-                    const p = pan || { x: 0, y: 0 };
-                    // Canvas viewport is roughly 1200×700px (approximate, no DOM measure needed)
+                    const p = pan  || { x: 0, y: 0 };
                     const viewportCenter = {
                         x: (-p.x / z) + (600 / z),
                         y: (-p.y / z) + (350 / z),
@@ -154,38 +205,49 @@ export default function AIChatPanel({ isOpen, onClose, addAiElements, pan, zoom,
                     const canvasElements = parseSvgToCanvasElements(response.elements, connections, {
                         viewportCenter,
                         existingElements: existingElements || [],
+                        layout,
                     });
-                    
+
                     if (canvasElements.length > 0) {
                         addAiElements(canvasElements);
                         setMessages(prev => [...prev, {
                             id: Date.now() + 2,
                             role: 'assistant',
-                            content: `\u2705 Diagram added to canvas. (${canvasElements.length} shape${canvasElements.length > 1 ? 's' : ''} placed) You can drag, resize, or delete them like any other element.`
+                            content: `✅ Diagram added to canvas (${canvasElements.length} object${canvasElements.length !== 1 ? 's' : ''} placed). You can drag, resize, or delete them freely.`,
                         }]);
                     } else {
                         setMessages(prev => [...prev, {
                             id: Date.now() + 2,
                             role: 'assistant',
-                            content: '\u26A0\uFE0F The diagram was generated but no renderable shapes were found. Try rephrasing your prompt.'
+                            content: '⚠️ The diagram was generated but no renderable shapes were found. Try rephrasing your prompt.',
                         }]);
                     }
                 }
-            } else {
-                throw new Error(response.error || 'Invalid format received');
+                return;
             }
+
+            // ── Fallback: show whatever text came back as a chat message
+            // (handles edge cases where mode is missing or unrecognised)
+            setMessages(prev => [...prev, {
+                id: Date.now() + 1,
+                role: 'assistant',
+                content: response.message || String(response),
+            }]);
+
+
         } catch (error) {
-            console.error('Gemini AI API Error:', error);
+            console.error('AI Error:', error);
             const msg = error?.response?.data?.error || error?.message || 'Unknown error';
             setMessages(prev => [...prev, {
                 id: Date.now() + 1,
                 role: 'assistant',
-                content: `❌ Error: ${msg}`
+                content: `❌ Error: ${msg}`,
             }]);
         } finally {
             setIsThinking(false);
         }
     };
+
 
     if (!isVisible && !isOpen) return null;
 

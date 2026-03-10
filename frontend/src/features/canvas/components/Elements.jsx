@@ -128,6 +128,157 @@ export function FreehandElement({ el }) {
     );
 }
 
+// ─── Database (Cylinder) ────────────────────────────────────────
+export function DatabaseElement({ el }) {
+    const { x, y, width: w, height: h } = el;
+    const ry = Math.max(4, h * 0.15);   // ellipse y-radius for top/bottom caps
+    const rx = w / 2;                   // ellipse x-radius
+    const cx = x + rx;                  // centre x
+    const bodyTop = y + ry;
+    const bodyBot = y + h - ry;
+    const fill   = el.fillColor === 'none' ? 'none' : el.fillColor;
+    const stroke = el.strokeColor;
+    const sw     = el.strokeWidth;
+    const da     = dashArray(el.strokeStyle, sw);
+    const op     = el.opacity / 100;
+    return (
+        <g opacity={op}>
+            {/* Body rectangle */}
+            <rect x={x} y={bodyTop} width={w} height={bodyBot - bodyTop}
+                fill={fill} stroke="none" />
+            {/* Left and right body edges */}
+            <line x1={x}     y1={bodyTop} x2={x}     y2={bodyBot} stroke={stroke} strokeWidth={sw} strokeDasharray={da} />
+            <line x1={x + w} y1={bodyTop} x2={x + w} y2={bodyBot} stroke={stroke} strokeWidth={sw} strokeDasharray={da} />
+            {/* Bottom ellipse */}
+            <ellipse cx={cx} cy={bodyBot} rx={rx} ry={ry}
+                fill={fill} stroke={stroke} strokeWidth={sw} strokeDasharray={da} />
+            {/* Top ellipse (drawn last so it sits on top) */}
+            <ellipse cx={cx} cy={bodyTop} rx={rx} ry={ry}
+                fill={fill} stroke={stroke} strokeWidth={sw} strokeDasharray={da} />
+        </g>
+    );
+}
+
+// ─── Cloud ──────────────────────────────────────────────────────
+export function CloudElement({ el }) {
+    const { x, y, width: w, height: h } = el;
+    // Normalised cloud path on a 100×60 viewport, then scaled with a transform
+    const path = [
+        'M 25,50',
+        'Q 5,50 5,35',
+        'Q 5,20 20,20',
+        'Q 20,5 35,5',
+        'Q 50,5 55,15',
+        'Q 65,5 80,10',
+        'Q 95,10 95,25',
+        'Q 100,25 100,35',
+        'Q 100,50 85,50',
+        'Z',
+    ].join(' ');
+    return (
+        <g opacity={el.opacity / 100}
+           transform={`translate(${x},${y}) scale(${w / 100},${h / 50})`}>
+            <path d={path}
+                fill={el.fillColor === 'none' ? '#f0f4ff' : el.fillColor}
+                stroke={el.strokeColor}
+                strokeWidth={el.strokeWidth * (100 / w)}
+                strokeDasharray={dashArray(el.strokeStyle, el.strokeWidth)}
+                strokeLinejoin="round"
+            />
+        </g>
+    );
+}
+
+// ─── Actor (Stick-figure user icon) ─────────────────────────────
+export function ActorElement({ el }) {
+    const { x, y, width: w, height: h } = el;
+    const cx   = x + w / 2;
+    const hr   = Math.min(w, h) * 0.18;   // head radius
+    const headCy = y + hr + 2;
+    const bodyT  = headCy + hr;
+    const bodyB  = y + h * 0.68;
+    const legY   = y + h;
+    const armY   = bodyT + (bodyB - bodyT) * 0.35;
+    const sw  = el.strokeWidth;
+    const col = el.strokeColor;
+    const op  = el.opacity / 100;
+    return (
+        <g opacity={op} strokeLinecap="round">
+            {/* Head */}
+            <circle cx={cx} cy={headCy} r={hr}
+                fill={el.fillColor === 'none' ? 'none' : el.fillColor}
+                stroke={col} strokeWidth={sw} />
+            {/* Body */}
+            <line x1={cx} y1={bodyT} x2={cx} y2={bodyB} stroke={col} strokeWidth={sw} />
+            {/* Arms */}
+            <line x1={x + w * 0.1} y1={armY} x2={x + w * 0.9} y2={armY} stroke={col} strokeWidth={sw} />
+            {/* Legs */}
+            <line x1={cx} y1={bodyB} x2={x + w * 0.15} y2={legY} stroke={col} strokeWidth={sw} />
+            <line x1={cx} y1={bodyB} x2={x + w * 0.85} y2={legY} stroke={col} strokeWidth={sw} />
+        </g>
+    );
+}
+
+// ─── Queue (rectangle with double-bar ends) ──────────────────────
+export function QueueElement({ el }) {
+    const { x, y, width: w, height: h } = el;
+    const barW  = Math.max(4, w * 0.07);
+    const fill  = el.fillColor === 'none' ? 'none' : el.fillColor;
+    const stroke = el.strokeColor;
+    const sw    = el.strokeWidth;
+    const da    = dashArray(el.strokeStyle, sw);
+    const op    = el.opacity / 100;
+    return (
+        <g opacity={op}>
+            {/* Main body */}
+            <rect x={x} y={y} width={w} height={h}
+                rx={4} ry={4}
+                fill={fill} stroke={stroke} strokeWidth={sw} strokeDasharray={da} />
+            {/* Left bar */}
+            <rect x={x} y={y} width={barW} height={h}
+                rx={4} ry={4}
+                fill={stroke} opacity={0.15} />
+            <line x1={x + barW} y1={y} x2={x + barW} y2={y + h}
+                stroke={stroke} strokeWidth={sw} strokeDasharray={da} />
+            {/* Right bar */}
+            <rect x={x + w - barW} y={y} width={barW} height={h}
+                rx={4} ry={4}
+                fill={stroke} opacity={0.15} />
+            <line x1={x + w - barW} y1={y} x2={x + w - barW} y2={y + h}
+                stroke={stroke} strokeWidth={sw} strokeDasharray={da} />
+        </g>
+    );
+}
+
+// ─── Microservice (dashed-border container box with tag) ─────────
+export function MicroserviceElement({ el }) {
+    const { x, y, width: w, height: h } = el;
+    const tagH  = Math.max(14, h * 0.18);
+    const tagW  = Math.min(w * 0.55, 80);
+    const fill  = el.fillColor === 'none' ? '#f8f7ff' : el.fillColor;
+    const stroke = el.strokeColor;
+    const sw    = el.strokeWidth;
+    const op    = el.opacity / 100;
+    return (
+        <g opacity={op}>
+            {/* Outer dashed container */}
+            <rect x={x} y={y} width={w} height={h}
+                rx={6} ry={6}
+                fill={fill} stroke={stroke} strokeWidth={sw} strokeDasharray={`${sw * 4} ${sw * 2}`} />
+            {/* Top banner / tag */}
+            <rect x={x} y={y} width={tagW} height={tagH}
+                rx={6} ry={6}
+                fill={stroke} opacity={0.85} />
+            {/* Inner service box */}
+            <rect x={x + 8} y={y + tagH + 8}
+                width={w - 16} height={h - tagH - 16}
+                rx={4} ry={4}
+                fill="none" stroke={stroke} strokeWidth={sw * 0.75}
+                strokeDasharray="none" />
+        </g>
+    );
+}
+
 // ─── Text ───────────────────────────────────────────────────────
 // ─── Text ───────────────────────────────────────────────────────
 const FONT_CSS = {
@@ -174,13 +325,19 @@ export function ImageElement({ el }) {
 export function ElementRenderer({ el }) {
     if (!el) return null;
     switch (el.type) {
-        case 'rect': return <RectElement el={el} />;
-        case 'diamond': return <DiamondElement el={el} />;
-        case 'circle': return <CircleElement el={el} />;
-        case 'arrow': return <ArrowElement el={el} />;
-        case 'freehand': return <FreehandElement el={el} />;
-        case 'text': return <TextElement el={el} />;
-        case 'image': return <ImageElement el={el} />;
+        case 'rect':         return <RectElement        el={el} />;
+        case 'diamond':      return <DiamondElement     el={el} />;
+        case 'circle':       return <CircleElement      el={el} />;
+        case 'arrow':        return <ArrowElement       el={el} />;
+        case 'freehand':     return <FreehandElement    el={el} />;
+        case 'text':         return <TextElement        el={el} />;
+        case 'image':        return <ImageElement       el={el} />;
+        // ── Extended AI diagram shapes ──
+        case 'database':     return <DatabaseElement    el={el} />;
+        case 'cloud':        return <CloudElement       el={el} />;
+        case 'actor':        return <ActorElement       el={el} />;
+        case 'queue':        return <QueueElement       el={el} />;
+        case 'microservice': return <MicroserviceElement el={el} />;
         default: return null;
     }
 }
