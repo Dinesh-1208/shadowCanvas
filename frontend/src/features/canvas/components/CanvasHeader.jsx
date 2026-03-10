@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { MoreHorizontal, ArrowLeft } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 
-export function CanvasHeader({ title, setTitle, onMenuClick, readOnly, ownerName }) {
+export function CanvasHeader({ title, setTitle, onMenuClick, readOnly, ownerName, activeUsers = [] }) {
     const [isEditing, setIsEditing] = useState(false);
     const [tempTitle, setTempTitle] = useState(title);
 
@@ -74,6 +74,34 @@ export function CanvasHeader({ title, setTitle, onMenuClick, readOnly, ownerName
                     </span>
                 )}
             </div>
+
+            {/* Active Users */}
+            {activeUsers && activeUsers.length > 0 && (
+                <div className="hidden md:flex flex-row items-center ml-2 sm:ml-4 pl-2 sm:pl-4 border-l border-gray-200">
+                    <div className="flex items-center">
+                        <div className="flex">
+                            {activeUsers.slice(0, 5).map((user, index) => (
+                                <div
+                                    key={user.userId}
+                                    title={user.userName}
+                                    className={`relative group w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ring-2 ring-white cursor-pointer animate-in fade-in zoom-in duration-150 ease-out ${index > 0 ? '-ml-2' : ''}`}
+                                    style={{ backgroundColor: user.color || '#6366f1' }}
+                                >
+                                    {user.userName ? user.userName.charAt(0).toUpperCase() : '?'}
+                                    <div className="absolute top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-800 text-white text-[10px] sm:text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                                        {user.userName}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        {activeUsers.length > 5 && (
+                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center bg-gray-100 text-gray-600 text-xs font-bold ring-2 ring-white animate-in fade-in zoom-in duration-150 ease-out -ml-2 z-10">
+                                +{activeUsers.length - 5}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
