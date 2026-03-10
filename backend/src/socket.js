@@ -1,5 +1,7 @@
 import { Server } from "socket.io";
 
+const activeCanvasUsers = {}; // roomCode -> Map of userId -> { userId, userName, color }
+
 export const initSocket = (server) => {
     const allowedOrigins = [
         "http://localhost:5173",
@@ -28,6 +30,24 @@ export const initSocket = (server) => {
             socket.data = socket.data || {};
             socket.data.roomCode = normalizedRoom;
             console.log(`[Socket] User ${socket.id} joined room: ${normalizedRoom}`);
+        });
+
+        socket.on("user_joined_canvas", (data) => {
+            const { roomCode, userId, userName, color } = data;
+            if (!roomCode || !userId) return;
+            const normalizedRoom = roomCode.toUpperCase();
+            
+            socket.data = socket.data || {};
+            socket.data.roomCode = normalizedRoom;
+            socket.data.userId = userId;
+
+            if (!activeCanvasUsers[normalizedRoom]) {
+                activeCanvasUsers[normalizedRoom] = {};
+            }
+            
+            activeCanvasUsers[normalizedRoom][userId] = { userId, userName, color };
+            
+            io.to(normalizedRoom).emit("canvas_users_update", Object.values(activeCanvasUsers[normalizedRoom]));
         });
 
         socket.on("canvas-update", (data) => {
@@ -75,14 +95,28 @@ export const initSocket = (server) => {
 
         socket.on("leave_canvas", () => {
             if (socket.data?.roomCode && socket.data?.userId) {
-                socket.to(socket.data.roomCode).emit("cursor_remove", { userId: socket.data.userId });
+                const roomCode = socket.data.roomCode;
+                const userId = socket.data.userId;
+                socket.to(roomCode).emit("cursor_remove", { userId });
+
+                if (activeCanvasUsers[roomCode] && activeCanvasUsers[roomCode][userId]) {
+                    delete activeCanvasUsers[roomCode][userId];
+                    io.to(roomCode).emit("canvas_users_update", Object.values(activeCanvasUsers[roomCode]));
+                }
             }
         });
 
         socket.on("disconnect", () => {
             console.log(`[Socket] User disconnected: ${socket.id}`);
             if (socket.data?.roomCode && socket.data?.userId) {
-                socket.to(socket.data.roomCode).emit("cursor_remove", { userId: socket.data.userId });
+                const roomCode = socket.data.roomCode;
+                const userId = socket.data.userId;
+                socket.to(roomCode).emit("cursor_remove", { userId });
+
+                if (activeCanvasUsers[roomCode] && activeCanvasUsers[roomCode][userId]) {
+                    delete activeCanvasUsers[roomCode][userId];
+                    io.to(roomCode).emit("canvas_users_update", Object.values(activeCanvasUsers[roomCode]));
+                }
             }
         });
 

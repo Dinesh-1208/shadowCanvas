@@ -193,13 +193,14 @@ export default function CanvasPage() {
                 <div className="grid grid-cols-3 items-center w-full max-w-full gap-2 lg:gap-4">
 
                     {/* Left side: Header (Logo + Title) */}
-                    <div className="flex items-center gap-2 pointer-events-auto min-w-0 overflow-hidden">
+                    <div className="flex items-center gap-2 pointer-events-auto min-w-0">
                         <CanvasHeader
                             title={canvas.title}
                             setTitle={canvas.setTitle}
                             onMenuClick={() => setMenuOpen(!isMenuOpen)}
                             readOnly={isViewMode}
                             ownerName={canvas.ownerName}
+                            activeUsers={canvas.activeUsers}
                         />
                     </div>
 
