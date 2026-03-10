@@ -18,6 +18,8 @@ const getUserIdFromToken = () => {
 const MyCanvases = () => {
     const [canvases, setCanvases] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [showNamingModal, setShowNamingModal] = useState(false);
+    const [newCanvasName, setNewCanvasName] = useState("");
     const navigate = useNavigate();
     const currentUserId = getUserIdFromToken();
 
@@ -39,10 +41,15 @@ const MyCanvases = () => {
         }
     };
 
-    const handleCreateNew = async () => {
+    const handleCreateNew = async (e) => {
+        e?.preventDefault();
+        if (!newCanvasName.trim()) return;
+
         try {
-            const data = await createCanvas("Untitled Canvas");
+            const data = await createCanvas(newCanvasName);
             if (data.success) {
+                setShowNamingModal(false);
+                setNewCanvasName("");
                 navigate(`/canvas/${data.canvas.roomCode}`, { state: { canvasId: data.canvas._id } });
             }
         } catch (error) {
@@ -108,7 +115,7 @@ const MyCanvases = () => {
                         <h2 className="text-2xl font-semibold text-white mb-2">No canvases yet</h2>
                         <p className="text-white/80 mb-6">Start your creative journey by creating your first canvas.</p>
                         <button
-                            onClick={handleCreateNew}
+                            onClick={() => setShowNamingModal(true)}
                             className="text-[#1a103d] bg-white hover:bg-gray-100 font-semibold py-2 px-6 rounded-lg transition-colors"
                         >
                             Create one now &rarr;
@@ -118,7 +125,7 @@ const MyCanvases = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {/* New Canvas Card - Glassmorphism style */}
                         <div
-                            onClick={handleCreateNew}
+                            onClick={() => setShowNamingModal(true)}
                             className="bg-white/10 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl border-2 border-dashed border-white/30 flex flex-col items-center justify-center p-8 cursor-pointer transition-all hover:bg-white/20 group h-64"
                         >
                             <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform">
@@ -195,6 +202,57 @@ const MyCanvases = () => {
                     </div>
                 )}
             </main>
+
+            {/* Naming Modal */}
+            {showNamingModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#1a103d]/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-8">
+                            <h2 className="text-2xl font-bold text-[#1a103d] mb-2">Name Your Canvas</h2>
+                            <p className="text-gray-500 mb-6 font-medium">What will your next masterpiece be called?</p>
+                            
+                            <form onSubmit={handleCreateNew}>
+                                <div className="mb-8">
+                                    <label className="block text-xs font-black text-[#1a103d]/40 uppercase tracking-widest mb-2 px-1">
+                                        Canvas Title
+                                    </label>
+                                    <div className="relative group">
+                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-xl grayscale group-focus-within:grayscale-0 transition-all">
+                                            🎨
+                                        </div>
+                                        <input
+                                            autoFocus
+                                            type="text"
+                                            value={newCanvasName}
+                                            onChange={(e) => setNewCanvasName(e.target.value)}
+                                            placeholder="e.g., My Awesome Idea"
+                                            className="w-full bg-[#f8faff] border-2 border-transparent focus:border-[#b2a4ff]/30 focus:bg-white rounded-[20px] pl-12 pr-4 py-4 text-sm font-bold text-[#1a103d] transition-all outline-none"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div className="flex gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowNamingModal(false)}
+                                        className="flex-1 py-4 px-6 bg-gray-100 hover:bg-gray-200 text-[#1a103d]/60 font-bold rounded-[20px] transition-all active:scale-95"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="flex-1 py-4 px-6 bg-[#b2a4ff] hover:bg-[#9281ff] text-[#1a103d] font-black rounded-[20px] shadow-lg shadow-purple-500/20 transition-all active:scale-95"
+                                    >
+                                        Create &rarr;
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <Footer />
         </div>
     );
