@@ -51,17 +51,16 @@ const LandingPage = () => {
             <div className="relative z-10 flex-grow">
                 <Navbar />
 
-                {/* Hero Section */}
                 <motion.section
                     initial="hidden"
                     whileInView="visible"
                     viewport={{ once: true }}
                     variants={containerVariants}
-                    className="pt-40 pb-16 px-6 text-center max-w-5xl mx-auto"
+                    className="pt-32 pb-12 px-6 text-center max-w-5xl mx-auto"
                 >
                     <motion.h1
                         variants={itemVariants}
-                        className="text-6xl md:text-8xl font-bold text-white tracking-tight mb-8 leading-[1.1]"
+                        className="text-5xl md:text-7xl font-bold text-white tracking-tight mb-6 leading-[1.1]"
                     >
                         Visualize, Build & <br />
                         <span className="text-[#1a103d]">Co-Create with AI</span>
@@ -69,7 +68,7 @@ const LandingPage = () => {
 
                     <motion.p
                         variants={itemVariants}
-                        className="text-xl text-white/90 max-w-3xl mx-auto mb-12 leading-relaxed"
+                        className="text-lg text-white/90 max-w-2xl mx-auto mb-10 leading-relaxed"
                     >
                         The vibrant, high-performance whiteboard for modern teams.
                         Transform complex ideas into beautiful layouts instantly with ShadowCanvas.
@@ -77,11 +76,11 @@ const LandingPage = () => {
 
                     <motion.div
                         variants={itemVariants}
-                        className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-24"
+                        className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-16"
                     >
                         <button
                             onClick={handleGetStarted}
-                            className="px-10 py-4 bg-[#1a103d] text-white rounded-2xl font-bold text-lg shadow-2xl hover:bg-[#251854] transition-all transform hover:-translate-y-1 active:scale-95"
+                            className="px-9 py-3.5 bg-[#1a103d] text-white rounded-2xl font-bold text-base shadow-2xl hover:bg-[#251854] transition-all transform hover:-translate-y-1 active:scale-95"
                         >
                             {isAuthenticated ? "Open Canvas" : "Get Started"}
                         </button>

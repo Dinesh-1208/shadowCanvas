@@ -13,27 +13,27 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 mx-auto max-w-7xl mt-4 rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-lg">
+    <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-5 py-2.5 mx-auto max-w-6xl mt-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-lg transition-all duration-300">
       <Link to="/" className="flex items-center gap-2">
-        <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-          <div className="w-4 h-4 bg-white rounded-sm rotate-45"></div>
+        <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center">
+          <div className="w-3.5 h-3.5 bg-white rounded-sm rotate-45"></div>
         </div>
-        <span className="text-white font-bold tracking-tighter text-xl uppercase">
+        <span className="text-white font-bold tracking-tighter text-lg uppercase">
           ShadowCanvas
         </span>
       </Link>
 
-      <div className="hidden md:flex items-center gap-8">
-        <a href="#features" className="text-white/80 hover:text-white transition-colors text-sm font-medium">
+      <div className="hidden md:flex items-center gap-6">
+        <a href="#features" className="text-white/80 hover:text-white transition-colors text-[13px] font-bold uppercase tracking-wider">
           Features
         </a>
-        <a href="#how-it-works" className="text-white/80 hover:text-white transition-colors text-sm font-medium">
+        <a href="#how-it-works" className="text-white/80 hover:text-white transition-colors text-[13px] font-bold uppercase tracking-wider">
           How it Works
         </a>
-        <a href="#security" className="text-white/80 hover:text-white transition-colors text-sm font-medium">
+        <a href="#security" className="text-white/80 hover:text-white transition-colors text-[13px] font-bold uppercase tracking-wider">
           Security
         </a>
-        <a href="#more" className="text-white/80 hover:text-white transition-colors text-sm font-medium">
+        <a href="#more" className="text-white/80 hover:text-white transition-colors text-[13px] font-bold uppercase tracking-wider">
           More
         </a>
       </div>
@@ -41,15 +41,15 @@ const Navbar = () => {
       <div className="flex items-center gap-4">
         {isAuthenticated ? (
           <>
-            <Link to="/my-canvases" className="text-white/80 hover:text-white transition-colors text-sm font-medium">
+            <Link to="/my-canvases" className="text-white/80 hover:text-white transition-colors text-[13px] font-bold uppercase tracking-wider">
               My Canvases
             </Link>
-            <Link to="/profile" className="text-white/80 hover:text-white transition-colors text-sm font-medium">
+            <Link to="/profile" className="text-white/80 hover:text-white transition-colors text-[13px] font-bold uppercase tracking-wider">
               My Profile
             </Link>
             <button
               onClick={handleLogout}
-              className="px-5 py-2 rounded-full bg-red-500 hover:bg-red-600 text-white font-semibold transition-all shadow-lg hover:shadow-red-500/30 active:scale-95"
+              className="px-4 py-1.5 rounded-full bg-red-500 hover:bg-red-600 text-white text-xs font-black uppercase transition-all shadow-lg hover:shadow-red-500/30 active:scale-95"
             >
               Logout
             </button>
@@ -57,9 +57,9 @@ const Navbar = () => {
         ) : (
           <>
             <Link to="/register">
-              <Button className="bg-[#1a103d] hover:bg-[#251854] text-white rounded-full px-6 py-2 flex items-center gap-2 border-none">
+              <Button className="bg-[#1a103d] hover:bg-[#251854] text-white rounded-full px-5 py-1.5 text-xs font-black uppercase flex items-center gap-2 border-none">
                 Get Started
-                <MoveRight className="w-4 h-4" />
+                <MoveRight className="w-3.5 h-3.5" />
               </Button>
             </Link>
           </>
