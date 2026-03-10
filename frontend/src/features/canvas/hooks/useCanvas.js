@@ -60,6 +60,10 @@ export function useCanvas(initialState, roomCode) {
     }, [elements]);
 
     const cursorThrottleRef = useRef(0);
+    const cursorLatestPos = useRef(null);
+    const cursorRaf = useRef(null);
+    const idleTimerRef = useRef(null);
+
     const userInfoRef = useRef(null);
 
     useEffect(() => {
@@ -152,6 +156,15 @@ export function useCanvas(initialState, roomCode) {
         });
 
         socket.on('cursor_remove', (data) => {
+            const { userId } = data;
+            setActiveCursors(prev => {
+                const next = { ...prev };
+                delete next[userId];
+                return next;
+            });
+        });
+
+        socket.on('cursor_idle', (data) => {
             const { userId } = data;
             setActiveCursors(prev => {
                 const next = { ...prev };
@@ -629,21 +642,43 @@ export function useCanvas(initialState, roomCode) {
 
     const emitCursorMove = (x, y, role = 'EDIT') => {
         if (!socketRef.current || !roomCode || !userInfoRef.current) return;
-
         if (role === 'VIEW') return;
 
-        const now = Date.now();
-        // Send cursor updates every 30ms (~33 updates/sec)
-        if (now - cursorThrottleRef.current > 30) {
-            cursorThrottleRef.current = now;
-            socketRef.current.emit("cursor_move", {
-                roomCode,
-                canvasId: canvasIdRef.current,
-                userId: userInfoRef.current.userId,
-                userName: userInfoRef.current.userName,
-                cursorX: x,
-                cursorY: y,
-                role
+        // 1. Detect Idle Cursor: Reset the 3-second timer on every move
+        if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+        idleTimerRef.current = setTimeout(() => {
+            if (socketRef.current) {
+                socketRef.current.emit("cursor_idle", {
+                    roomCode,
+                    userId: userInfoRef.current.userId
+                });
+            }
+        }, 3000);
+
+        // 2. Throttle Cursor Updates via requestAnimationFrame
+        cursorLatestPos.current = { x, y, role };
+
+        if (!cursorRaf.current) {
+            cursorRaf.current = requestAnimationFrame(function loop() {
+                const now = Date.now();
+                if (now - cursorThrottleRef.current >= 33) {
+                    cursorThrottleRef.current = now;
+                    const pos = cursorLatestPos.current;
+                    if (socketRef.current) {
+                        socketRef.current.emit("cursor_move", {
+                            roomCode,
+                            canvasId: canvasIdRef.current,
+                            userId: userInfoRef.current.userId,
+                            userName: userInfoRef.current.userName,
+                            cursorX: pos.x,
+                            cursorY: pos.y,
+                            role: pos.role
+                        });
+                    }
+                    cursorRaf.current = null;
+                } else {
+                    cursorRaf.current = requestAnimationFrame(loop);
+                }
             });
         }
     };
