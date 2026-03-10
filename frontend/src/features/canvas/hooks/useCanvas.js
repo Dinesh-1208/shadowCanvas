@@ -12,6 +12,7 @@ export function useCanvas(initialState, roomCode) {
     const [selectedId, setSelectedId] = useState(null);
     const [title, setTitle] = useState('Untitled Canvas'); // Canvas Name
     const [ownerName, setOwnerName] = useState(null); // Canvas Owner Name
+    const [role, setRole] = useState('VIEW'); // Real role from Backend
     const [roomPassword, setRoomPassword] = useState(null); // Room Password
     const [requestStatus, setRequestStatus] = useState(null); // PENDING, REJECTED, ACCEPTED
     const [nextAllowedRequestAt, setNextAllowedRequestAt] = useState(null); // Cooldown Date string
@@ -274,6 +275,15 @@ export function useCanvas(initialState, roomCode) {
                 if (data.requestStatus) setRequestStatus(data.requestStatus);
                 if (data.nextAllowedRequestAt) setNextAllowedRequestAt(data.nextAllowedRequestAt);
 
+                if (data.currentUserRole) {
+                    setRole(data.currentUserRole);
+                    const searchParams = new URLSearchParams(window.location.search);
+                    if ((data.currentUserRole === 'OWNER' || data.currentUserRole === 'EDIT') && searchParams.get('mode') === 'view') {
+                        searchParams.set('mode', 'edit');
+                        window.history.replaceState(null, '', '?' + searchParams.toString());
+                    }
+                }
+
                 let initialElements = [];
                 // 1. Load snapshot if available
                 if (data.snapshot) {
@@ -383,6 +393,11 @@ export function useCanvas(initialState, roomCode) {
                 });
             } catch (e) {
                 console.warn('Failed to persist event:', e.message);
+                if (e.response && e.response.status === 403) {
+                    alert('Your edit access has expired! Switching to view mode.');
+                    window.location.search = '?mode=view';
+                    return;
+                }
             }
         }
 
@@ -654,6 +669,7 @@ export function useCanvas(initialState, roomCode) {
         setSelectedId,
         title,
         ownerName,
+        role,
         roomPassword,
         setRoomPassword,
         requestStatus,

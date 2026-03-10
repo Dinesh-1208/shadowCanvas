@@ -31,9 +31,12 @@ export default function CanvasPage() {
         }
     }, [mode, location, navigate]);
 
-    const isViewMode = mode === 'view';
-
     const canvas = useCanvas(location.state, roomCode);
+
+    console.log("CanvasPage render:", { mode, canvasRole: canvas.role });
+    // Fall back to URL mode only if backend role is strictly VIEW
+    const isViewMode = (canvas.role === 'OWNER' || canvas.role === 'EDIT') ? false : mode === 'view';
+
     const [isMenuOpen, setMenuOpen] = React.useState(false);
     const [isShareModalOpen, setIsShareModalOpen] = React.useState(false);
     const [isRequestingLocal, setIsRequestingLocal] = React.useState(false);
@@ -41,8 +44,10 @@ export default function CanvasPage() {
 
     // For custom expiry per request
     const [customExpiryMode, setCustomExpiryMode] = React.useState({});
-    const [customExpiryValue, setCustomExpiryValue] = React.useState({});
-    const [customExpiryUnit, setCustomExpiryUnit] = React.useState({});
+    const [customExpiryDays, setCustomExpiryDays] = React.useState({});
+    const [customExpiryHours, setCustomExpiryHours] = React.useState({});
+    const [customExpiryMinutes, setCustomExpiryMinutes] = React.useState({});
+    const [customExpiryTick, setCustomExpiryTick] = React.useState({});
 
     // Track cooldown timer
     useEffect(() => {
@@ -292,69 +297,116 @@ export default function CanvasPage() {
                             <div key={req.requestId} className="bg-white p-3 rounded-xl shadow-2xl border border-gray-200">
                                 <p className="text-sm font-semibold mb-2">{req.userName} requested edit access</p>
                                 <div className="flex flex-col gap-2">
-                                    <div className="flex gap-2 text-xs">
-                                        <select
-                                            className="border border-gray-300 rounded px-2 py-1 bg-gray-50 flex-1 outline-none text-gray-700 font-medium"
-                                            id={`expiry-${req.requestId}`}
-                                            defaultValue="0"
-                                            onChange={(e) => {
-                                                setCustomExpiryMode(prev => ({ ...prev, [req.requestId]: e.target.value === 'custom' }));
-                                                if (e.target.value === 'custom') {
-                                                    setCustomExpiryValue(prev => ({ ...prev, [req.requestId]: 1 }));
-                                                    setCustomExpiryUnit(prev => ({ ...prev, [req.requestId]: 'hours' }));
-                                                }
-                                            }}
-                                        >
-                                            <option value="0">No Expiration</option>
-                                            <option value="0.166666667">10 minutes</option>
-                                            <option value="0.5">30 minutes</option>
-                                            <option value="1">1 hour</option>
-                                            <option value="6">6 hours</option>
-                                            <option value="24">1 day</option>
-                                            <option value="custom">Custom</option>
-                                        </select>
+                                    {/* Expiration Options Grid */}
+                                    <div className="grid grid-cols-3 gap-1.5 mt-2">
+                                        {[
+                                            { label: 'Forever', value: 0 },
+                                            { label: '10 Min', value: 0.166666667 },
+                                            { label: '30 Min', value: 0.5 },
+                                            { label: '1 Hour', value: 1 },
+                                            { label: '6 Hours', value: 6 },
+                                            { label: '1 Day', value: 24 },
+                                            { label: 'Custom', value: 'custom' }
+                                        ].map(opt => {
+                                            const isSelected = (!customExpiryMode[req.requestId] && opt.value !== 'custom' &&
+                                                parseFloat(document.getElementById(`expiry-${req.requestId}`)?.value || 0) === opt.value) ||
+                                                (customExpiryMode[req.requestId] && opt.value === 'custom');
+
+                                            return (
+                                                <button
+                                                    key={opt.label}
+                                                    onClick={() => {
+                                                        const selectEl = document.getElementById(`expiry-${req.requestId}`);
+                                                        if (!selectEl) {
+                                                            const newEl = document.createElement('input');
+                                                            newEl.type = 'hidden';
+                                                            newEl.id = `expiry-${req.requestId}`;
+                                                            document.body.appendChild(newEl);
+                                                        }
+
+                                                        if (opt.value === 'custom') {
+                                                            setCustomExpiryMode(prev => ({ ...prev, [req.requestId]: true }));
+                                                            setCustomExpiryDays(prev => ({ ...prev, [req.requestId]: prev[req.requestId] ?? 0 }));
+                                                            setCustomExpiryHours(prev => ({ ...prev, [req.requestId]: prev[req.requestId] ?? 1 }));
+                                                            setCustomExpiryMinutes(prev => ({ ...prev, [req.requestId]: prev[req.requestId] ?? 0 }));
+                                                        } else {
+                                                            setCustomExpiryMode(prev => ({ ...prev, [req.requestId]: false }));
+                                                            document.getElementById(`expiry-${req.requestId}`).value = opt.value;
+                                                            // Force re-render of button styles
+                                                            setCustomExpiryTick(prev => ({ ...prev, [req.requestId]: Math.random() }));
+                                                        }
+                                                    }}
+                                                    className={`py-1.5 text-[11px] font-semibold rounded-lg transition-all border ${isSelected
+                                                        ? 'bg-[#b2a4ff] text-white border-[#b2a4ff] shadow-sm'
+                                                        : 'bg-white text-gray-600 border-gray-200 hover:border-[#b2a4ff] hover:text-[#b2a4ff]'
+                                                        }`}
+                                                >
+                                                    {opt.label}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* HIDDEN INPUT FOR LEGACY COMPATIBILITY */}
+                                    <input type="hidden" id={`expiry-${req.requestId}`} defaultValue="0" />
+
+                                    {customExpiryMode[req.requestId] && (
+                                        <div className="flex justify-between items-center gap-2 mt-2 bg-gray-50 p-2.5 rounded-xl border border-[#b2a4ff]/30 shadow-inner">
+                                            <div className="flex flex-col items-center flex-1">
+                                                <span className="text-[10px] uppercase font-bold text-[#b2a4ff] mb-1">Days</span>
+                                                <input
+                                                    type="number" min="0" max="365"
+                                                    className="w-full text-center border border-gray-200 rounded-lg py-1.5 outline-none focus:border-[#b2a4ff] focus:ring-2 focus:ring-[#b2a4ff]/30 font-semibold text-gray-700 bg-white transition-all shadow-sm"
+                                                    value={customExpiryDays[req.requestId] ?? 0}
+                                                    onChange={(e) => setCustomExpiryDays(prev => ({ ...prev, [req.requestId]: e.target.value }))}
+                                                />
+                                            </div>
+                                            <div className="flex flex-col items-center flex-1">
+                                                <span className="text-[10px] uppercase font-bold text-[#b2a4ff] mb-1">Hours</span>
+                                                <input
+                                                    type="number" min="0" max="23"
+                                                    className="w-full text-center border border-gray-200 rounded-lg py-1.5 outline-none focus:border-[#b2a4ff] focus:ring-2 focus:ring-[#b2a4ff]/30 font-semibold text-gray-700 bg-white transition-all shadow-sm"
+                                                    value={customExpiryHours[req.requestId] ?? 1}
+                                                    onChange={(e) => setCustomExpiryHours(prev => ({ ...prev, [req.requestId]: e.target.value }))}
+                                                />
+                                            </div>
+                                            <div className="flex flex-col items-center flex-1">
+                                                <span className="text-[10px] uppercase font-bold text-[#b2a4ff] mb-1">Mins</span>
+                                                <input
+                                                    type="number" min="0" max="59" step="1"
+                                                    className="w-full text-center border border-gray-200 rounded-lg py-1.5 outline-none focus:border-[#b2a4ff] focus:ring-2 focus:ring-[#b2a4ff]/30 font-semibold text-gray-700 bg-white transition-all shadow-sm"
+                                                    value={customExpiryMinutes[req.requestId] ?? 0}
+                                                    onChange={(e) => setCustomExpiryMinutes(prev => ({ ...prev, [req.requestId]: e.target.value }))}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="flex gap-2 text-xs mt-3">
                                         <button
                                             onClick={() => {
                                                 let exp;
                                                 if (customExpiryMode[req.requestId]) {
-                                                    const val = parseFloat(customExpiryValue[req.requestId] || 0);
-                                                    const unit = customExpiryUnit[req.requestId];
-                                                    exp = unit === 'minutes' ? val / 60 : val;
+                                                    const d = parseInt(customExpiryDays[req.requestId]) || 0;
+                                                    const h = parseInt(customExpiryHours[req.requestId]) || 0;
+                                                    const m = parseInt(customExpiryMinutes[req.requestId]) || 0;
+                                                    exp = (d * 24) + h + (m / 60);
                                                 } else {
                                                     exp = parseFloat(document.getElementById(`expiry-${req.requestId}`).value);
                                                 }
                                                 handleApprove(req.requestId, req.userId, 'ACCEPT', exp === 0 ? null : exp);
                                             }}
-                                            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer shrink-0"
+                                            className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-3 py-2 rounded-xl font-bold shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5"
                                         >
-                                            Accept
+                                            Accept Access
                                         </button>
                                         <button
                                             onClick={() => handleApprove(req.requestId, req.userId, 'REJECT', null)}
-                                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer shrink-0"
+                                            className="px-4 bg-gray-100 hover:bg-red-50 text-gray-700 hover:text-red-600 border border-gray-200 hover:border-red-200 py-2 rounded-xl font-bold transition-all"
                                         >
                                             Reject
                                         </button>
                                     </div>
-                                    {customExpiryMode[req.requestId] && (
-                                        <div className="flex gap-2 text-xs mt-1">
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                className="border border-gray-300 rounded px-2 py-1 w-16 outline-none bg-gray-50"
-                                                value={customExpiryValue[req.requestId] || 1}
-                                                onChange={(e) => setCustomExpiryValue(prev => ({ ...prev, [req.requestId]: e.target.value }))}
-                                            />
-                                            <select
-                                                className="border border-gray-300 rounded px-2 py-1 flex-1 outline-none bg-gray-50"
-                                                value={customExpiryUnit[req.requestId] || 'hours'}
-                                                onChange={(e) => setCustomExpiryUnit(prev => ({ ...prev, [req.requestId]: e.target.value }))}
-                                            >
-                                                <option value="minutes">Minutes</option>
-                                                <option value="hours">Hours</option>
-                                            </select>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
                         ))}

@@ -379,38 +379,55 @@ router.get('/:id/events', async (req, res) => {
         let returnPassword = null;
         let requestStatus = null;
         let nextAllowedRequestAt = null;
+        let currentUserRole = 'VIEW';
 
         if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
             try {
                 const token = req.headers.authorization.split(' ')[1];
                 const decoded = jwt.verify(token, process.env.JWT_SECRET);
-                const reqUserId = decoded.userId;
+                // Safe lookup to get raw ObjectId to guarantee Mongoose matching
+                const user = await User.findById(decoded.userId);
+                if (user) {
+                    const reqUserId = user._id;
+                    const ownerIdStr = canvas.ownerId?._id?.toString() || canvas.ownerId?.toString();
 
-                if (canvas.ownerId && canvas.ownerId._id && canvas.ownerId._id.toString() === reqUserId.toString()) {
-                    returnPassword = canvas.roomPassword || null;
-                } else {
-                    // Auto Add Editors When Using Edit Link
-                    if (mode === 'edit') {
+                    if (ownerIdStr === reqUserId.toString()) {
+                        returnPassword = canvas.roomPassword || null;
+                        currentUserRole = 'OWNER';
+                    } else {
+                        // Check existing access FIRST
                         let acc = await CanvasAccess.findOne({ canvasId: id, userId: reqUserId });
-                        if (!acc) {
-                            acc = new CanvasAccess({ canvasId: id, userId: reqUserId, role: 'EDIT' });
-                            await acc.save();
-                        } else if (acc.role !== 'EDIT') {
-                            acc.role = 'EDIT';
-                            await acc.save();
+                        if (acc && acc.role === 'EDIT') {
+                            currentUserRole = 'EDIT';
                         }
-                        await EditRequest.findOneAndDelete({ canvasId: id, userId: reqUserId });
-                    }
 
-                    // Check if there is an existing edit request for this user
-                    const existingReq = await EditRequest.findOne({ canvasId: id, userId: reqUserId });
-                    if (existingReq) {
-                        requestStatus = existingReq.status;
-                        nextAllowedRequestAt = existingReq.nextAllowedRequestAt || null;
+                        // Auto Add Editors When Using Edit Link
+                        if (mode === 'edit') {
+                            currentUserRole = 'EDIT';
+                            if (!acc) {
+                                acc = new CanvasAccess({ canvasId: id, userId: reqUserId, role: 'EDIT' });
+                                await acc.save();
+                            } else if (acc.role !== 'EDIT') {
+                                acc.role = 'EDIT';
+                                await acc.save();
+                            }
+                            await EditRequest.findOneAndDelete({ canvasId: id, userId: reqUserId });
+                        }
+
+                        // Check if there is an existing edit request for this user
+                        const existingReq = await EditRequest.findOne({ canvasId: id, userId: reqUserId });
+                        if (existingReq) {
+                            requestStatus = existingReq.status;
+                            nextAllowedRequestAt = existingReq.nextAllowedRequestAt || null;
+                        }
                     }
                 }
-            } catch (e) { }
+            } catch (e) {
+                console.error('[loadEvents authorization error]', e);
+            }
         }
+
+        console.log(`[Canvas/Events] Loaded for User: ${req.headers.authorization ? 'Logged In' : 'Guest'}, Role computed: ${currentUserRole}`);
 
         res.status(200).json({
             success: true,
@@ -425,6 +442,7 @@ router.get('/:id/events', async (req, res) => {
             },
             requestStatus,
             nextAllowedRequestAt,
+            currentUserRole,
             snapshot: latestSnapshot ? { elements: baseElements, lastEventOrder: snapshotOrder } : null,
             events,
         });
