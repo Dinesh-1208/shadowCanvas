@@ -66,6 +66,13 @@ export const initSocket = (server) => {
             }
         });
 
+        socket.on("cursor_idle", (data) => {
+            const { roomCode, userId } = data;
+            if (roomCode) {
+                socket.to(roomCode.toUpperCase()).emit("cursor_idle", { userId });
+            }
+        });
+
         socket.on("leave_canvas", () => {
             if (socket.data?.roomCode && socket.data?.userId) {
                 socket.to(socket.data.roomCode).emit("cursor_remove", { userId: socket.data.userId });
