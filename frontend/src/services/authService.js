@@ -54,41 +54,6 @@ const resetPassword = async (data) => {
     return response.data;
 };
 
-const getProfile = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) return null;
-    try {
-        const response = await axios.get(`${API_URL}/auth/me`, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
-        return response.data;
-    } catch (error) {
-        console.error("Get Profile Error:", error);
-        if (error.response?.status === 401) {
-            localStorage.removeItem("token");
-        }
-        throw error;
-    }
-};
-
-const updateProfile = async (userData) => {
-    const token = localStorage.getItem("token");
-    if (!token) throw new Error("No token found");
-    const response = await axios.put(`${API_URL}/auth/update-profile`, userData, {
-        headers: { Authorization: `Bearer ${token}` },
-    });
-    return response.data;
-};
-
-const changePassword = async (passwordData) => {
-    const token = localStorage.getItem("token");
-    if (!token) throw new Error("No token found");
-    const response = await axios.post(`${API_URL}/auth/change-password`, passwordData, {
-        headers: { Authorization: `Bearer ${token}` },
-    });
-    return response.data;
-};
-
 export default {
     register,
     login,
@@ -97,8 +62,5 @@ export default {
     forgotPassword,
     verifyOtp,
     resetPassword,
-    getProfile,
-    updateProfile,
-    changePassword,
     API_URL,
 };
