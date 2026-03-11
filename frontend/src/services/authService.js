@@ -1,6 +1,13 @@
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const getApiUrl = () => {
+    if (typeof process !== 'undefined' && process.env && process.env.VITE_API_URL) {
+        return process.env.VITE_API_URL;
+    }
+    return "http://localhost:5000";
+};
+
+const API_URL = getApiUrl();
 console.log("AuthService API URL:", API_URL);
 
 const register = async (userData) => {
@@ -21,7 +28,9 @@ const login = async (userData) => {
 
 const logout = () => {
     localStorage.removeItem("token");
-    window.location.href = "/login";
+    if (typeof window !== 'undefined' && window.location) {
+        window.location.href = "/login";
+    }
 };
 
 const getCurrentUser = () => {

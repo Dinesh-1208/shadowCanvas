@@ -8,6 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "test": "jest",
+    "test:watch": "jest --watch",
     "cy:open": "cypress open",
     "cy:run": "cypress run"
   },
