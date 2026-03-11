@@ -32,7 +32,7 @@ pipeline {
                         "EMAIL_USER=dummy",
                         "EMAIL_PASS=dummy"
                     ]) {
-                       // sh 'npm test'
+                       sh 'npm test'
                     }
                 }
             }
