@@ -1,16 +1,19 @@
-import axios from 'axios';
-
 const getApiUrl = () => {
-    // Vite replaces import.meta.env during build.
-    // In Jest, we use process.env or a placeholder.
-    if (typeof process !== 'undefined' && process.env && process.env.VITE_API_URL) {
-        return process.env.VITE_API_URL;
+  if (typeof process !== 'undefined' && process.env && process.env.VITE_API_URL) {
+    return process.env.VITE_API_URL;
+  }
+  try {
+    if (import.meta.env && import.meta.env.VITE_API_URL) {
+      return import.meta.env.VITE_API_URL;
     }
-    // Return a default or find a way to access it that doesn't break Jest parser
-    return "http://localhost:5000";
+  } catch (e) {
+    // import.meta.env not available (e.g. Jest)
+  }
+  return "";
 };
 
-const API_BASE_URL = getApiUrl() || "http://localhost:5000";
+const API_BASE_URL = getApiUrl();
+
 const BASE = `${API_BASE_URL}/api/canvas`;
 
 // Helper to get auth header
