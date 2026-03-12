@@ -1,15 +1,6 @@
 import axios from "axios";
-
-const getApiUrl = () => {
-    if (typeof process !== 'undefined' && process.env && process.env.VITE_API_URL) {
-        return process.env.VITE_API_URL;
-    }
-    return "http://localhost:5000";
-};
-
-const API_URL = getApiUrl();
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 console.log("AuthService API URL:", API_URL);
-
 const register = async (userData) => {
     const response = await axios.post(`${API_URL}/auth/register`, userData);
     if (response.data.token) {
@@ -17,7 +8,6 @@ const register = async (userData) => {
     }
     return response.data;
 };
-
 const login = async (userData) => {
     const response = await axios.post(`${API_URL}/auth/login`, userData);
     if (response.data.token) {
@@ -25,19 +15,16 @@ const login = async (userData) => {
     }
     return response.data;
 };
-
 const logout = () => {
     localStorage.removeItem("token");
     if (typeof window !== 'undefined' && window.location) {
         window.location.href = "/login";
     }
 };
-
 const getCurrentUser = () => {
     const token = localStorage.getItem("token");
     return token;
 };
-
 const forgotPassword = async (email) => {
     try {
         const response = await axios.post(`${API_URL}/auth/forgot-password`, { email });
@@ -47,7 +34,6 @@ const forgotPassword = async (email) => {
         throw error;
     }
 };
-
 const verifyOtp = async (data) => {
     try {
         const response = await axios.post(`${API_URL}/auth/verify-otp`, data);
@@ -57,12 +43,10 @@ const verifyOtp = async (data) => {
         throw error;
     }
 };
-
 const resetPassword = async (data) => {
     const response = await axios.post(`${API_URL}/auth/reset-password`, data);
     return response.data;
 };
-
 const getProfile = async () => {
     const token = localStorage.getItem("token");
     if (!token) return null;
@@ -79,7 +63,6 @@ const getProfile = async () => {
         throw error;
     }
 };
-
 const updateProfile = async (userData) => {
     const token = localStorage.getItem("token");
     if (!token) throw new Error("No token found");
@@ -88,7 +71,6 @@ const updateProfile = async (userData) => {
     });
     return response.data;
 };
-
 const changePassword = async (passwordData) => {
     const token = localStorage.getItem("token");
     if (!token) throw new Error("No token found");
@@ -97,7 +79,6 @@ const changePassword = async (passwordData) => {
     });
     return response.data;
 };
-
 export default {
     register,
     login,
