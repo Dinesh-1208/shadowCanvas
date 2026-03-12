@@ -1,3 +1,4 @@
+import axios from 'axios';
 const getApiUrl = () => {
   if (typeof process !== 'undefined' && process.env && process.env.VITE_API_URL) {
     return process.env.VITE_API_URL;
