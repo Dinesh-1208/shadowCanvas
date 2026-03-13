@@ -1,102 +1,194 @@
+---
 
-ShadowCanvas – DevOps & Development Documentation
-Project Overview
-ShadowCanvas is a full-stack collaborative whiteboard application enabling real-time multi-user canvas editing, authentication, canvas sharing, and multi-canvas session management. The project follows structured DevOps practices including CI validation and protected branch workflows.
-Architecture Overview
-Frontend
-- React + Vite
-- Tailwind CSS
-- Socket.io client
-- Axios for REST APIs
-- React Router for navigation
-Backend
-- Node.js + Express
-- MongoDB (Mongoose ODM)
-- JWT authentication
-- Passport.js OAuth
-- Socket.io server for real-time sync
-Git Workflow Strategy
-The project follows a feature-branch development model.
+# ShadowCanvas — Developer Documentation
 
-Branch Structure:
-- main → Stable branch
-- feature/* → New features
-- fix/* → Bug fixes
+---
 
-Development Flow:
-1. Pull latest main
-2. Create feature branch
-3. Implement changes
-4. Commit & push branch
-5. Create Pull Request
-6. CI pipeline runs automatically
-7. Merge only if checks pass
-Continuous Integration (CI)
-CI Tool Used: GitHub Actions
-CI configuration files are located in .github/workflows/ and include:
-- frontend-ci.yml
-- backend-ci.yml
-Frontend Pipeline
-Stages:
-- Install dependencies (npm install)
-- Lint (npm run lint)
-- Build verification (npm run build)
+## 1. Project Overview
 
-Purpose:
-- Enforce code quality
-- Ensure production build succeeds
-Backend Pipeline
-Stages:
-- Install dependencies (npm install)
-- Syntax validation (node --check src/index.js)
+ShadowCanvas is a real-time collaborative digital canvas platform that allows multiple users to draw, annotate, and create together simultaneously. It supports AI-assisted element generation, persistent canvas storage, OAuth-based authentication, and a fully automated CI/CD deployment pipeline.
 
-Purpose:
-- Catch syntax errors
-- Ensure backend integrity
-Quality Gate Enforcement
-Pull Requests cannot be merged unless all CI checks pass. This enforces integration stability and prevents faulty code from entering the main branch.
-Security Practices
-- JWT authentication with expiration
-- bcrypt password hashing
-- OAuth 2.0 (Google & GitHub)
-- Secrets stored in .env (excluded from version control)
-- CI secrets managed using GitHub Actions Secrets
-Feature Contributions
-Authentication Redirect Fix:
-- Resolved post-login redirect loop
-- Corrected authentication state handling
+---
 
-Canvas Sharing (Backend):
-- Implemented canvas sharing logic
-- Integrated authentication middleware
+## 2. Tech Stack
 
-MultiCanvas Lobby (Frontend):
-- Developed multi-canvas lobby page
-- Integrated routing and backend APIs
-Local Development Setup
-Backend Setup:
-cd backend
-npm install
-npm run dev
+Frontend: React, Vite, HTML Canvas API, Socket.io Client
+Backend: Node.js, Express, Socket.io, Mongoose
+Database: MongoDB Atlas
+Authentication: Google OAuth 2.0, GitHub OAuth, JWT
+AI: Google Gemini API (gemini-2.5-flash)
+Containerization: Docker, Docker Compose
+CI/CD: Jenkins (Master-Agent architecture)
+Cloud: AWS EC2 (ap-south-1)
+Reverse Proxy: Nginx
+SSL: Let's Encrypt (Certbot)
+Monitoring: Prometheus, Grafana
+Security Scanning: Trivy
+Registry: Docker Hub
 
-Frontend Setup:
-cd frontend
-npm install
-npm run dev
-Current DevOps Implementation Status
-CI Pipeline: Implemented
-Branch Protection: Implemented
-Automated Linting: Implemented
-Production Deployment: Not yet implemented
-Containerization (Docker): Planned
-Automated Testing: Planned
-Monitoring: Planned
-Planned DevOps Enhancements
-- Docker containerization (frontend & backend)
-- Docker Compose for local orchestration
-- AWS EC2 deployment
-- MongoDB Atlas integration
-- Automated testing integration
-- Monitoring with Prometheus & Grafana
-DevOps Ownership Summary
-DevOps responsibilities in this sprint included implementing CI workflows, enforcing feature-branch strategy, debugging pipeline failures, maintaining PR-based integration, and ensuring code quality gates before merge.
+---
+
+## 3. System Architecture
+
+The system follows a microservices-style deployment using Docker Compose with four containers running on the Jenkins Agent EC2 instance:
+
+- frontend — Nginx serving the React build, proxying API and Socket calls to backend
+- backend — Node.js Express server handling REST API, Socket.io, and OAuth
+- prometheus — Metrics collection
+- grafana — Metrics visualization dashboard
+
+The Jenkins Master EC2 instance runs Jenkins only and communicates with the Agent via SSH to trigger builds and deployments.
+
+Flow:
+1. Developer pushes code to GitHub
+2. GitHub webhook triggers Jenkins pipeline on the master
+3. Jenkins master delegates the job to the agent via SSH
+4. Agent runs the pipeline: install → test → build Docker images → scan → push to Docker Hub → deploy via Docker Compose
+
+---
+
+## 4. CI/CD Pipeline Stages
+
+Stage 1 — Checkout: Clones the repository from GitHub main branch
+
+Stage 2 — Install Backend Dependencies: Runs npm install in the backend directory
+
+Stage 3 — Run Backend Tests: Runs Jest test suite with environment variables injected
+
+Stage 4 — Lint and Audit Backend: Runs npm audit to check for vulnerabilities
+
+Stage 5 — Build Docker Images: Builds frontend image with VITE_API_URL build arg set to https://shadowcanvas.duckdns.org. Builds backend image.
+
+Stage 6 — Security Scan (Trivy): Scans both Docker images for known CVEs
+
+Stage 7 — Push Images: Logs into Docker Hub and pushes both images (himaneeshj/shadowcanvas-frontend, himaneeshj/shadowcanvas-backend)
+
+Stage 8 — Deploy: Writes backend.env from Jenkins credentials and runs docker compose pull followed by docker compose up -d
+
+Stage 9 — Cleanup: Runs docker system prune -f to free disk space
+
+---
+
+## 5. Module Implementation Details
+
+MODULE 1 — User Registration and Session Management
+- Google OAuth 2.0 and GitHub OAuth handled via Passport.js strategies
+- JWT tokens issued on successful authentication
+- Tokens stored client-side and sent in Authorization headers
+- Session expiry handled with token validation middleware
+- Callback URLs: https://shadowcanvas.duckdns.org/auth/google/callback and https://shadowcanvas.duckdns.org/auth/github/callback
+
+MODULE 2 — Canvas Creation and Basic Drawing
+- HTML Canvas API used for rendering
+- Mouse and touch events captured for freehand drawing
+- Eraser, clear canvas, and brush size controls implemented
+- Canvas initialized with default white background on creation
+
+MODULE 3 — Real-Time Collaboration
+- Socket.io manages WebSocket connections between users
+- Drawing actions broadcast to all users in the same room via room codes
+- Disconnection and reconnection handled gracefully
+- Active user presence tracked server-side and broadcast to the room
+
+MODULE 4 — Drawing Tools and Interaction
+- Tools: freehand pen, shapes (rectangle, circle, diamond, arrow), text, image upload, eraser, select
+- Color picker and brush size controls
+- Undo/Redo implemented per user using action history stack
+- Zoom control (percentage display) for canvas navigation
+
+MODULE 5 — Canvas Storage and Reusability
+- Canvas state saved as JSON snapshots to MongoDB via POST /api/canvas/save
+- Canvases listed per user via GET /api/canvas
+- Canvas loaded by room code via GET /api/canvas/:roomCode
+- Canvas deleted via DELETE /api/canvas/:id
+- Share functionality via room codes
+
+MODULE 6 — AI-Assisted Canvas and Auto-Save
+- Gemini API (gemini-2.5-flash model) integrated via @google/genai package
+- AI chat panel accessible from the canvas toolbar
+- User sends natural language prompt → backend calls Gemini → response rendered as canvas elements
+- GEMINI_API_KEY stored in backend.env
+- Auto-save triggers on canvas state changes at defined intervals
+
+---
+
+## 6. Environment Variables (backend.env)
+
+PORT — Port the backend server listens on (5000)
+MONGO_URI — MongoDB Atlas connection string
+JWT_SECRET — Secret key for signing JWT tokens
+GOOGLE_CLIENT_ID — Google OAuth app client ID
+GOOGLE_CLIENT_SECRET — Google OAuth app client secret
+GOOGLE_CALLBACK_URL — https://shadowcanvas.duckdns.org/auth/google/callback
+GITHUB_CLIENT_ID — GitHub OAuth app client ID
+GITHUB_CLIENT_SECRET — GitHub OAuth app client secret
+GITHUB_CALLBACK_URL — https://shadowcanvas.duckdns.org/auth/github/callback
+FRONTEND_URL — https://shadowcanvas.duckdns.org
+EMAIL_USER — Gmail address for email notifications
+EMAIL_PASS — Gmail app password
+GEMINI_API_KEY — Google Gemini API key
+
+---
+
+## 7. Nginx Configuration
+
+Nginx runs inside the frontend container and handles:
+- HTTP to HTTPS redirect (port 80 → 443)
+- SSL termination using Let's Encrypt certificates mounted from /etc/letsencrypt
+- Proxying /api/ requests to http://backend:5000
+- Proxying /auth/ requests to http://backend:5000
+- Proxying /socket.io/ requests to http://backend:5000 with WebSocket upgrade headers
+- Serving the React static build from /usr/share/nginx/html
+
+---
+
+## 8. Docker Compose Services
+
+frontend — Image: himaneeshj/shadowcanvas-frontend. Ports: 80, 443. Volumes: /etc/letsencrypt mounted read-only for SSL certificates.
+
+backend — Image: himaneeshj/shadowcanvas-backend. Port: 5000. Env file: backend.env.
+
+prometheus — Image: prom/prometheus. Port: 9090.
+
+grafana — Image: grafana/grafana. Port: 3000.
+
+---
+
+## 9. Infrastructure
+
+Jenkins Master — EC2 instance running Jenkins on port 8080. Communicates with agent via SSH. Hosts Jenkins credentials store for all secrets.
+
+Jenkins Agent — EC2 instance running Docker, Node.js, Trivy, Certbot. Hosts the application containers. Domain shadowcanvas.duckdns.org points to this instance's public IP via DuckDNS.
+
+SSL Certificate — Issued by Let's Encrypt via Certbot for shadowcanvas.duckdns.org. Stored at /etc/letsencrypt/live/shadowcanvas.duckdns.org/.
+
+---
+
+## 10. Local Setup Guide
+
+1. Clone the repository: git clone https://github.com/Dinesh-1208/shadowCanvas
+2. Navigate to backend folder and create a .env file with all variables listed in Section 6
+3. Run npm install and npm start in the backend folder
+4. Navigate to frontend folder
+5. Create a .env file with VITE_API_URL=http://localhost:5000
+6. Run npm install and npm run dev
+7. Frontend runs on http://localhost:5173
+8. Backend runs on http://localhost:5000
+
+---
+
+## 11. Known Issues and Future Work
+
+Known Issues:
+- Backend test suite requires a live MongoDB connection and will fail with a dummy URI
+- nginx.conf is baked into the Docker image; SSL config changes require a rebuild
+- backend.env is regenerated on every Jenkins deploy from Jenkins credentials
+
+Future Work:
+- Fix backend tests using MongoDB Memory Server for isolated testing
+- Add canvas version history
+- Improve AI element rendering accuracy
+- Add rate limiting to API endpoints
+- Set up Prometheus alerting rules in Grafana
+
+---
